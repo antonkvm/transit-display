@@ -1,5 +1,6 @@
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 
@@ -155,6 +156,58 @@ def fetch_departures_keep_trying(interval: int = 10) -> list[Departure]:
     return departures
 
 
+# todo: implement retrying GET until code is ok and response not empty
+def fetch_departures_for_station(station: dict) -> list[Departure]:
+    station_name = station["name"]
+    station_id = station["stationID"]
+    desired_products = station["fetch_products"]
+    product_params = {k: True if k in desired_products else False for k in PRODUCTS}
+
+    request_params = {
+        "when": "now",
+        "duration": 600,
+        "results": 12,
+        "linesOfStops": False,
+        "remarks": True,
+        "language": "de",
+        **product_params,
+    }
+
+    r = requests.get(f"{API_BASE}/stops/{station_id}/departures", request_params)
+
+    if not r.ok:
+        logger.error(f"Failed to fetch {station_name}, HTTP error {r.status_code}. Reason: {r.reason}")
+        return None  # ? or raise error?
+
+    departure_dicts: list[dict] = r.json()["departures"]
+    departures = [Departure(d) for d in departure_dicts if "cancelled" not in d.keys()]
+
+    departures = drop_duplicate_departures(departures)
+    departures = sorted(departures, key=lambda d: d.when)  # string comparison but still somehow works
+
+    if not departures:
+        logger.warning(f"Seems like the BVG server returned empty departures list. HTTP Response text: {r.text}")
+        return None  # ? or raise error?
+
+    return departures
+
+
+def fetch_departures_for_all_stations_concurrently() -> list[Departure]:
+    station_dicts = load_stations_from_config()
+
+    departures: list[Departure] = []
+
+    with ThreadPoolExecutor(max_workers=len(station_dicts)) as executor:
+        futures = [executor.submit(fetch_departures_for_station, station) for station in station_dicts]
+
+        for future in as_completed(futures):
+            result = future.result()
+            departures.extend(result)
+
+    departures = sorted(departures, key=lambda dep: dep.when)  # string comparison but still somehow works
+    return departures
+
+
 if __name__ == "__main__":
-    departures = fetch_departures()
+    departures = fetch_departures_for_all_stations_concurrently()
     print(make_table(departures))
