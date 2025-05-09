@@ -1,6 +1,5 @@
 import datetime
 import logging
-import subprocess
 import time
 from pathlib import Path
 
@@ -173,6 +172,7 @@ def show_gui_snapshot_window():
 
 # todo: fetching departures blocks clock update
 # todo: when one station cannot be fetched, it disappears from screen, bc the list is different. Solve with caching?
+# --> easier: just add condition that the new list must be non-empty
 def run_gui_loop():
     departures = fetch_departures_keep_trying()
     last_fetch = time.time()
@@ -187,16 +187,22 @@ def run_gui_loop():
         time.sleep(1)
 
 
+def death_screen():
+    text = "I died :("
+    screen = Image.new("RGB", (720, 720), "black")
+    draw = ImageDraw.Draw(screen)
+    text_anchor = "mm"
+    font = ImageFont.truetype(FONT_STYLE, 50)
+    draw.text((360, 360), text, "red", font, text_anchor)
+    write_rgb_to_frame_buffer(screen)
+
+
 def run():
     if not FRAMEBUFFER.exists():
         logger.info(f"No framebuffer {FRAMEBUFFER} detected, showing snapshot in viewer")
         show_gui_snapshot_window()
     else:
         logger.info("Starting GUI loop")
-        try:
-            subprocess.run(["sudo", "bash", "-c", "setterm -cursor off > /dev/tty1"])
-        except Exception:
-            logger.warning('Failed to disable cursor blinking from app. Your probably running this as a systemctl service, so use the cmdline.txt.')
         run_gui_loop()
 
 
@@ -209,10 +215,4 @@ if __name__ == "__main__":
         run()
     except BaseException as e:
         logger.error(f"GUI loop was interrupted. Error: {e}")
-        text = "I died :("
-        error_screen = Image.new("RGB", (720, 720), "black")
-        draw = ImageDraw.Draw(error_screen)
-        text_anchor = "mm"
-        font = ImageFont.truetype(FONT_STYLE, 50)
-        draw.text((360, 360), text, "red", font, text_anchor)
-        write_rgb_to_frame_buffer(error_screen)
+        death_screen()
