@@ -1,0 +1,5 @@
+stations:
+  - name: "Zoologischer Garten"
+    stationID: 900023201
+    fetch_products:
+      - "bus"
