@@ -12,9 +12,7 @@ logger = logging.getLogger(__name__)
 API_BASE = "https://v6.bvg.transport.rest"
 
 
-DEFAULT_STATIONS = [
-    {'name': 'Zoologischer Garten', 'stationID': 900023201, 'fetch_products': ['bus']}
-]
+DEFAULT_STATIONS = [{"name": "Zoologischer Garten", "stationID": 900023201, "fetch_products": ["bus"]}]
 
 
 PRODUCTS = ["suburban", "subway", "tram", "bus", "ferry", "express", "regional"]
@@ -96,21 +94,19 @@ def make_table(departures: list[Departure]) -> str:
     return table
 
 
-# todo: maybe drop departures whose depart time is in the past
 def fetch_departures() -> list[Departure] | None:
-    
     next_departures: list[Departure] = []
-    
+
     try:
         stations = load_stations_from_config()
     except Exception:
-        logger.warning('No stations from config yaml available, using default stations.')
+        logger.warning("No stations from config yaml available, using default stations.")
         stations = DEFAULT_STATIONS
-        
+
     for station in stations:
-        station_name = station['name']
-        station_id = station['stationID']
-        desired_products = station['fetch_products']
+        station_name = station["name"]
+        station_id = station["stationID"]
+        desired_products = station["fetch_products"]
 
         request_params = {
             "when": "now",
@@ -122,15 +118,15 @@ def fetch_departures() -> list[Departure] | None:
         }
         product_params = {k: True if k in desired_products else False for k in PRODUCTS}
         request_params.update(product_params)
-        
+
         r = requests.get(url=f"{API_BASE}/stops/{station_id}/departures", params=request_params)
-        
+
         if not r.ok:
             msg = f"HTTP error {r.status_code}: Failed to fetch stop {station_name}. Reason: {r.reason}"
             logger.error(msg)
             continue
         departures_here: list[dict] = [d for d in r.json()["departures"]]
-        
+
         for departure_json in departures_here:
             if "cancelled" in departure_json.keys():
                 continue
