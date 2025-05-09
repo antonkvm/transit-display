@@ -18,12 +18,17 @@ DEFAULT_STATIONS = [{"name": "Zoologischer Garten", "stationID": 900023201, "fet
 PRODUCTS = ["suburban", "subway", "tram", "bus", "ferry", "express", "regional"]
 
 
-def load_stations_from_config() -> dict:
-    config_file = Path(__file__).parent.parent / 'stations.yaml'
-    with config_file.open('r', encoding='utf-8') as f:
-        stations = yaml.safe_load(f)
-    return stations['stations']
-    
+def load_stations_from_config() -> list[dict]:
+    """Loads stations from config yaml and returns them as `list[dict]`. If load fails, returns `DEFAULT_STATIONS`."""
+    config_file = Path(__file__).parent.parent / "stations.yaml"
+    try:
+        with config_file.open("r", encoding="utf-8") as f:
+            stations = yaml.safe_load(f)
+        return stations["stations"]
+    except Exception as e:
+        logger.error(f"Failed to load config yaml. Loading default station Zoologischer Garten. Error: {e}")
+        return DEFAULT_STATIONS
+
 
 def time_only(iso_timestamp: str):
     dt = datetime.fromisoformat(iso_timestamp)
