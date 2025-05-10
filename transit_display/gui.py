@@ -187,8 +187,8 @@ def death_screen(error: str):
 def trip_fetch_loop(departures: list[Departure], dep_lock: threading.Lock, event: threading.Event):
     """Continuously updates the `departures` list reference in-place at an interval and within the thread lock."""
     while True:
-        new_departures = fetch_departures_for_all_stations_concurrently()
         try:
+            new_departures = fetch_departures_for_all_stations_concurrently()
             with dep_lock:
                 if len(new_departures) != 0 and new_departures != departures:
                     # update the list in-place:
@@ -255,3 +255,4 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception("GUI loop failed.")
         death_screen(str(e))
+        raise
