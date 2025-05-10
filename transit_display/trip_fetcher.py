@@ -1,6 +1,7 @@
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -10,13 +11,61 @@ from tabulate import tabulate
 
 logger = logging.getLogger(__name__)
 
+
 API_BASE = "https://v6.bvg.transport.rest"
-
-
 DEFAULT_STATIONS = [{"name": "Zoologischer Garten", "stationID": 900023201, "fetch_products": ["bus"]}]
-
-
 PRODUCTS = ["suburban", "subway", "tram", "bus", "ferry", "express", "regional"]
+
+
+@dataclass(frozen=True)
+class Departure:
+    trip_id: str
+    line: str
+    destination: str
+    when: str
+    delay_seconds: int
+    delay_minutes: int
+    delay_minutes_str: str
+    product: str
+
+    @classmethod
+    def from_json(cls, json: dict) -> "Departure":
+        trip_id: str = json["tripId"]
+        line: str = json["line"]["name"]
+        destination: str = json["destination"]["name"]
+        when: str = json["when"]
+        delay_seconds: int = json.get("delay") or 0
+        product: str = json["line"]["product"]
+
+        if line == "S41":
+            destination = "⟳ " + destination
+        elif line == "S42":
+            destination = "⟲ " + destination
+
+        destination = destination.replace("(Berlin)", "").strip()
+
+        when = datetime.fromisoformat(when).strftime("%H:%M")
+
+        delay_minutes: int = delay_seconds // 60 if delay_seconds else 0
+        if delay_minutes == 0:
+            delay_minutes_str = ""
+        elif delay_minutes > 0:
+            delay_minutes_str = f"+{delay_minutes}"
+        else:
+            delay_minutes_str = str(delay_minutes)
+
+        return cls(trip_id, line, destination, when, delay_seconds, delay_minutes, delay_minutes_str, product)
+
+    def __hash__(self):
+        hash_src = (self.line, self.when, self.delay_seconds, self.product)
+        return hash(hash_src)
+
+    def __eq__(self, value):
+        if not isinstance(value, Departure):
+            return NotImplemented
+        me = (self.line, self.when, self.delay_seconds, self.product)
+        you = (value.line, value.when, value.delay_seconds, value.product)
+        return me == you
 
 
 def load_stations_from_config() -> list[dict]:
@@ -31,120 +80,15 @@ def load_stations_from_config() -> list[dict]:
         return DEFAULT_STATIONS
 
 
-def time_only(iso_timestamp: str):
-    dt = datetime.fromisoformat(iso_timestamp)
-    return dt.strftime("%H:%M")
-
-
-class Departure:
-    def __init__(self, departure_json: dict):
-        self.trip_id: str = departure_json["tripId"]
-        self.line: str = departure_json["line"]["name"]
-        self.destination: str = departure_json["destination"]["name"]
-        self.when: str = departure_json["when"]
-        self.delay_seconds: int | None = departure_json["delay"]
-        self.remarks: list[dict] = departure_json["remarks"]
-        self.product: str = departure_json["line"]["product"]
-        self.process_attributes()
-
-    def process_attributes(self):
-        if self.line == "S41":
-            self.destination = "⟳ " + self.destination
-        elif self.line == "S42":
-            self.destination = "⟲ " + self.destination
-        self.destination = self.destination.replace("(Berlin)", "").strip()
-        self.when = time_only(self.when)
-        self.delay_minutes = self.delay_seconds // 60 if self.delay_seconds else 0
-        self.delay_minutes_str = self.prettify_delay_minutes()
-        if self.remarks:
-            self.remarks = [remark["summary"] for remark in self.remarks if remark["type"] == "warning"]
-        self.remarks = " -- ".join(self.remarks)
-
-    def prettify_delay_minutes(self) -> str:
-        delay = self.delay_minutes
-        if delay == 0:
-            return ""
-        if delay > 0:
-            return f"+{delay}"
-        return f"{delay}"
-
-    def __str__(self):
-        s = f"{self.line} | {self.destination} | {self.when} "
-        if self.delay_minutes:
-            s += f"(+{self.delay_minutes})" if self.delay_minutes > 0 else f"({self.delay_minutes})"
-        if self.remarks:
-            s += f" ({self.remarks})"
-        return s
-
-    def __hash__(self):
-        hash_src = (self.line, self.when, self.delay_seconds, self.product, self.remarks)
-        return hash(hash_src)
-
-    def __eq__(self, value):
-        if isinstance(value, Departure):
-            me = (self.line, self.when, self.delay_seconds, self.product, self.remarks)
-            other = (value.line, value.when, value.delay_seconds, value.product, value.remarks)
-            return me == other
-        else:
-            return NotImplemented
-
-
 def drop_duplicate_departures(departures: list[Departure]) -> list[Departure]:
     return list(set(departures))
 
 
 def make_table(departures: list[Departure]) -> str:
-    headers = ["Line", "Destination", "Arrival", "Delay", "Remark", "TripID", "Hash"]
-    data = [[d.line, d.destination, d.when, d.delay_minutes, d.remarks, d.trip_id, d.__hash__()] for d in departures]
+    headers = ["Line", "Destination", "Arrival", "Delay", "TripID", "Hash"]
+    data = [[d.line, d.destination, d.when, d.delay_minutes, d.trip_id, d.__hash__()] for d in departures]
     table = tabulate(data, headers)
     return table
-
-
-def fetch_departures() -> list[Departure] | None:
-    next_departures: list[Departure] = []
-
-    try:
-        stations = load_stations_from_config()
-    except Exception:
-        logger.warning("No stations from config yaml available, using default stations.")
-        stations = DEFAULT_STATIONS
-
-    for station in stations:
-        station_name = station["name"]
-        station_id = station["stationID"]
-        desired_products = station["fetch_products"]
-
-        request_params = {
-            "when": "now",
-            "duration": 600,
-            "results": 12,
-            "linesOfStops": False,
-            "remarks": True,
-            "language": "de",
-        }
-        product_params = {k: True if k in desired_products else False for k in PRODUCTS}
-        request_params.update(product_params)
-
-        r = requests.get(url=f"{API_BASE}/stops/{station_id}/departures", params=request_params)
-
-        if not r.ok:
-            msg = f"HTTP error {r.status_code}: Failed to fetch stop {station_name}. Reason: {r.reason}"
-            logger.error(msg)
-            continue
-        departures_here: list[dict] = [d for d in r.json()["departures"]]
-
-        for departure_json in departures_here:
-            if "cancelled" in departure_json.keys():
-                continue
-            departure = Departure(departure_json)
-            next_departures.append(departure)
-
-    next_departures = drop_duplicate_departures(next_departures)  # maybe obsolete
-    next_departures.sort(key=lambda d: d.when)
-
-    if not next_departures:
-        return None
-    return next_departures
 
 
 def fetch_departures_keep_trying(interval: int = 10) -> list[Departure]:
@@ -157,7 +101,9 @@ def fetch_departures_keep_trying(interval: int = 10) -> list[Departure]:
 
 
 # todo: implement retrying GET until code is ok and response not empty
-def fetch_departures_for_station(station: dict) -> list[Departure]:
+def fetch_departures(station: dict) -> list[Departure]:
+    """Fetch the departures for a station. `Station` dict sets name, station_id, and the desired fetch products."""
+
     station_name = station["name"]
     station_id = station["stationID"]
     desired_products = station["fetch_products"]
@@ -173,23 +119,33 @@ def fetch_departures_for_station(station: dict) -> list[Departure]:
         **product_params,
     }
 
-    r = requests.get(f"{API_BASE}/stops/{station_id}/departures", request_params)
-
-    if not r.ok:
-        logger.error(f"Failed to fetch {station_name}, HTTP error {r.status_code}. Reason: {r.reason}")
-        return None  # ? or raise error?
+    try:
+        r = requests.get(f"{API_BASE}/stops/{station_id}/departures", request_params)
+        r.raise_for_status()
+    except requests.HTTPError as e:
+        logger.error(f"{station_name}: HTTP error {r.status_code}. Reason: {r.reason}. Error: {e}")
+        raise
 
     departure_dicts: list[dict] = r.json()["departures"]
-    departures = [Departure(d) for d in departure_dicts if "cancelled" not in d.keys()]
+    departures = [Departure.from_json(d) for d in departure_dicts if d.get("cancelled") is not True]
 
     departures = drop_duplicate_departures(departures)
     departures = sorted(departures, key=lambda d: d.when)  # string comparison but still somehow works
 
     if not departures:
-        logger.warning(f"Seems like the BVG server returned empty departures list. HTTP Response text: {r.text}")
-        return None  # ? or raise error?
+        raise ValueError(f"{station_name}: Received empty departures list")
 
     return departures
+
+
+def fetch_departures_retry_until_success(station: dict, retry_delay: float = 5.0) -> list[Departure]:
+    """Wrapper function that calls `fetch_departures` until the server responds with something useful."""
+    while True:
+        try:
+            return fetch_departures(station)
+        except (requests.HTTPError, ValueError) as e:
+            logger.warning(f"{station['name']}: Fetch failed - {e}. Retrying in {retry_delay} seconds ...")
+            time.sleep(retry_delay)
 
 
 def fetch_departures_for_all_stations_concurrently() -> list[Departure]:
@@ -198,7 +154,7 @@ def fetch_departures_for_all_stations_concurrently() -> list[Departure]:
     departures: list[Departure] = []
 
     with ThreadPoolExecutor(max_workers=len(station_dicts)) as executor:
-        futures = [executor.submit(fetch_departures_for_station, station) for station in station_dicts]
+        futures = [executor.submit(fetch_departures_retry_until_success, station) for station in station_dicts]
 
         for future in as_completed(futures):
             result = future.result()
