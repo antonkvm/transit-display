@@ -57,10 +57,12 @@ class Departure:
         return cls(trip_id, line, destination, when, delay_seconds, delay_minutes, delay_minutes_str, product)
 
     def __hash__(self):
+        """Note: Exclude tripId from hash function bc BVG may assign different tripIds to physically identical trips."""
         hash_src = (self.line, self.when, self.delay_seconds, self.product)
         return hash(hash_src)
 
     def __eq__(self, value):
+        """Note: Decide equality without tripId bc BVG may assign different tripIds to physically identical trips."""
         if not isinstance(value, Departure):
             return NotImplemented
         me = (self.line, self.when, self.delay_seconds, self.product)
