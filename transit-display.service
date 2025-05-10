@@ -1,31 +1,12 @@
 # systemd service file
 
-# make sure to:
+# Replace USERNAME with your username WorkingDirectory
+# Adapt the paths in ExecStart and WorkingDirectory to your setup
+# Place this file at /etc/systemd/system/transit-display.service
 
-# replace USERNAME with your username WorkingDirectory
-# adapt the paths in ExecStart and WorkingDirectory to your setup
-# place this file at /etc/systemd/system/transit-display.service
+# More infos in README.md
 
-# append "vt.global_cursor_default=0" to '/boot/firmware/cmdline.txt' to disable cursor blinking at boot
-# (in older versions: 'boot/cmdline.txt')
-# has to be all on one line!
 
-# then run these to enable the service:
-# sudo systemctl daemon-reexec
-# sudo systemctl daemon-reload
-# sudo systemctl enable transit-display.service
-
-# then start the service:
-# sudo systemctl start transit-display.service
-
-# check status:
-# sudo systemctl status transit-display.service
-
-# stop:
-# sudo systemctl stop transit-display.service
-
-# logs:
-# journalctl -u transit-display.service -f
 
 [Unit]
 Description=Transit Display GUI
