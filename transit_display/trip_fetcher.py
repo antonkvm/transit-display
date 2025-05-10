@@ -16,6 +16,7 @@ API_BASE = "https://v6.bvg.transport.rest"
 DEFAULT_STATIONS = [{"name": "Zoologischer Garten", "stationID": 900023201, "fetch_products": ["bus"]}]
 PRODUCTS = ["suburban", "subway", "tram", "bus", "ferry", "express", "regional"]
 
+FETCH_RETRY_TIMEOUT = 10.0
 
 @dataclass(frozen=True)
 class Departure:
@@ -93,16 +94,6 @@ def make_table(departures: list[Departure]) -> str:
     return table
 
 
-def fetch_departures_keep_trying(interval: int = 10) -> list[Departure]:
-    """Fetch departures. If none are returned from the server, keep trying every 10 seconds."""
-    departures = fetch_departures()
-    while not departures:
-        departures = fetch_departures()
-        time.sleep(interval)
-    return departures
-
-
-# todo: implement retrying GET until code is ok and response not empty
 def fetch_departures(station: dict) -> list[Departure]:
     """Fetch the departures for a station. `Station` dict sets name, station_id, and the desired fetch products."""
 
@@ -140,14 +131,14 @@ def fetch_departures(station: dict) -> list[Departure]:
     return departures
 
 
-def fetch_departures_retry_until_success(station: dict, retry_delay: float = 5.0) -> list[Departure]:
+def fetch_departures_retry_until_success(station: dict) -> list[Departure]:
     """Wrapper function that calls `fetch_departures` until the server responds with something useful."""
     while True:
         try:
             return fetch_departures(station)
         except (requests.HTTPError, ValueError) as e:
-            logger.warning(f"{station['name']}: Fetch failed - {e}. Retrying in {retry_delay} seconds ...")
-            time.sleep(retry_delay)
+            logger.warning(f"{station['name']}: Fetch failed - {e}. Retrying in {FETCH_RETRY_TIMEOUT} seconds ...")
+            time.sleep(FETCH_RETRY_TIMEOUT)
 
 
 def fetch_departures_for_all_stations_concurrently() -> list[Departure]:

@@ -1,20 +1,26 @@
 import datetime
 import logging
+import threading
 import time
 from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from transit_display.trip_fetcher import Departure, fetch_departures_keep_trying
+from transit_display.trip_fetcher import Departure, fetch_departures_for_all_stations_concurrently
 
 logger = logging.getLogger(__name__)
 
 NUM_ROWS, ROW_HEIGHT = 18, 40  # these need to multiply to 720
 COL_WIDTHS = [80, 540, 100]  # these need to add up to 720
 FRAMEBUFFER = Path("/dev/fb0")
+FETCH_INTERVAL_SEC = 15
 
 FONT_STYLE = "./assets/DejaVuSans.ttf"
+
+FONT_30 = ImageFont.truetype(FONT_STYLE, 30)
+FONT_50 = ImageFont.truetype(FONT_STYLE, 50)
+FONT_80 = ImageFont.truetype(FONT_STYLE, 80)
 
 SBAHN_GREEN = (64, 131, 53)
 METROBUS_YELLOW = (233, 208, 33)
@@ -53,8 +59,7 @@ def draw_line_info(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: i
     text_x = get_horizontal_center(x, col_width) + 1
     text_y = get_vertical_center(y, ROW_HEIGHT) + 1
 
-    font = ImageFont.truetype(FONT_STYLE, 30)
-    draw.text((text_x, text_y), departure.line, text_color, font, text_anchor)
+    draw.text((text_x, text_y), departure.line, text_color, FONT_30, text_anchor)
 
 
 def truncate_text(text: str, font: ImageFont.ImageFont, draw: ImageDraw.ImageDraw, max_width: int) -> str:
@@ -77,13 +82,13 @@ def draw_destination(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y:
     text = departure.destination
 
     text_anchor = "lm"  # left-middle
-    text_x = x + 5
+    padding_left = 10
+    text_x = x + padding_left
     text_y = get_vertical_center(y, ROW_HEIGHT)
 
-    font = ImageFont.truetype(FONT_STYLE, 30)
-    text = truncate_text(text, font, draw, col_width)
+    text = truncate_text(text, FONT_30, draw, col_width - padding_left)
 
-    draw.text((text_x, text_y), text, "white", font, text_anchor)
+    draw.text((text_x, text_y), text, "white", FONT_30, text_anchor)
 
 
 def draw_depart_time(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: int, col_width: int):
@@ -101,11 +106,10 @@ def draw_depart_time(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y:
     text_x = get_horizontal_center(x, col_width)
     text_y = get_vertical_center(y, ROW_HEIGHT)
 
-    font = ImageFont.truetype(FONT_STYLE, 30)
-    draw.text((text_x, text_y), text, text_color, font, text_anchor)
+    draw.text((text_x, text_y), text, text_color, FONT_30, text_anchor)
 
 
-def draw_date_time(draw: ImageDraw.ImageDraw):
+def draw_clock(draw: ImageDraw.ImageDraw):
     now = datetime.datetime.now()
     # date_str = now.strftime("%a, %d. %b %Y")
     time_str = now.strftime("%H:%M")
@@ -114,18 +118,12 @@ def draw_date_time(draw: ImageDraw.ImageDraw):
     x = 360
     y = get_vertical_center(y=0, height=ROW_HEIGHT * 2)
 
-    font = ImageFont.truetype(FONT_STYLE, 80)
-    draw.text((x, y), time_str, "white", font, text_anchor)
+    draw.text((x, y), time_str, "white", FONT_80, text_anchor)
 
 
-def draw_gui(departures: list[Departure]) -> Image.Image:
-    image = Image.new("RGB", (720, 720), "black")
-    draw = ImageDraw.Draw(image)
-
-    draw_date_time(draw)
-
+def draw_trip_list(departures: list[Departure], draw: ImageDraw.ImageDraw):
     for row in range(NUM_ROWS):
-        # leave space at top to display time and date
+        # leave 2 rows at the top to display time and date
         y = (row + 2) * ROW_HEIGHT
 
         try:
@@ -147,6 +145,12 @@ def draw_gui(departures: list[Departure]) -> Image.Image:
             elif col == 2:
                 draw_depart_time(departure, draw, x, y, col_width)
 
+
+def draw_gui(departures: list[Departure]) -> Image.Image:
+    image = Image.new("RGB", (720, 720), "black")
+    draw = ImageDraw.Draw(image)
+    draw_clock(draw)
+    draw_trip_list(departures, draw)
     return image
 
 
@@ -165,36 +169,71 @@ def write_rgb_to_frame_buffer(rgb_image: Image.Image):
 
 
 def show_gui_snapshot_window():
-    departures = fetch_departures_keep_trying()
+    departures = fetch_departures_for_all_stations_concurrently()
     img = draw_gui(departures)
     img.show()
 
 
-# todo: fetching departures blocks clock update
-# todo: when one station cannot be fetched, it disappears from screen, bc the list is different. Solve with caching?
-# --> easier: just add condition that the new list must be non-empty
-def run_gui_loop():
-    departures = fetch_departures_keep_trying()
-    last_fetch = time.time()
-    while True:
-        now = time.time()
-        if now - last_fetch > 10:
-            new_departures = fetch_departures_keep_trying()
-            if new_departures != departures:
-                departures = new_departures
-        screen = draw_gui(departures)
-        write_rgb_to_frame_buffer(screen)
-        time.sleep(1)
-
-
-def death_screen():
+def death_screen(error: str):
     text = "I died :("
     screen = Image.new("RGB", (720, 720), "black")
     draw = ImageDraw.Draw(screen)
     text_anchor = "mm"
-    font = ImageFont.truetype(FONT_STYLE, 50)
-    draw.text((360, 360), text, "red", font, text_anchor)
+    draw.text((360, 200), text, "red", FONT_50, text_anchor)
+    draw.multiline_text((10, 300), error, "red", FONT_50, "la", spacing=2)
     write_rgb_to_frame_buffer(screen)
+
+
+def trip_fetch_loop(departures: list[Departure], dep_lock: threading.Lock, event: threading.Event):
+    """Continuously updates the `departures` list reference in-place at an interval and within the thread lock."""
+    while True:
+        new_departures = fetch_departures_for_all_stations_concurrently()
+        try:
+            with dep_lock:
+                if len(new_departures) != 0 and new_departures != departures:
+                    # update the list in-place:
+                    departures.clear()
+                    departures.extend(new_departures)
+                    event.set()
+        except Exception:
+            logger.exception("Error in trip fetch loop thread.")
+        time.sleep(FETCH_INTERVAL_SEC)
+
+
+def clock_loop(event: threading.Event):
+    previous_minute = -1
+    while True:
+        new_minute = datetime.datetime.now().minute
+        clock_changed = new_minute != previous_minute
+        if clock_changed:
+            event.set()
+        previous_minute = new_minute
+
+
+def gui_loop():
+    update_event = threading.Event()
+    update_event.set()  # initialize flag as True to allow first GUI render
+
+    departures = []
+    dep_lock = threading.Lock()
+    fetch_thread = threading.Thread(target=trip_fetch_loop, args=[departures, dep_lock, update_event], daemon=True)
+    fetch_thread.start()
+
+    clock_thread = threading.Thread(target=clock_loop, args=[update_event])
+    clock_thread.start()
+
+    while True:
+        update_event.wait(timeout=15.0)
+
+        # immediately clear event flag, so updates triggered during render are 'queued' for the next loop:
+        update_event.clear()
+
+        # only need a shallow copy bc the Departure objects in the list are immutable (frozen dataclass)
+        with dep_lock:
+            departures_copy = departures.copy()
+
+        screen_img = draw_gui(departures_copy)
+        write_rgb_to_frame_buffer(screen_img)
 
 
 def run():
@@ -202,8 +241,8 @@ def run():
         logger.info(f"No framebuffer {FRAMEBUFFER} detected, showing snapshot in viewer")
         show_gui_snapshot_window()
     else:
-        logger.info("Starting GUI loop")
-        run_gui_loop()
+        logger.info(f"Framebuffer {FRAMEBUFFER} found, Starting GUI loop")
+        gui_loop()
 
 
 if __name__ == "__main__":
@@ -213,6 +252,6 @@ if __name__ == "__main__":
     logger.info("Starting GUI as a module")
     try:
         run()
-    except BaseException as e:
-        logger.error(f"GUI loop was interrupted. Error: {e}")
-        death_screen()
+    except Exception as e:
+        logger.exception("GUI loop failed.")
+        death_screen(str(e))
