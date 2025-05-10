@@ -1,6 +1,6 @@
 # transit-display
 
-Display the the next public transit departures from you favorite stations on a kiosk-style screen.
+Display the next public transit departures from you favorite stations on a kiosk-style screen.
 
 ## Some info
 
