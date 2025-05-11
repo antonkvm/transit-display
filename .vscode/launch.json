@@ -5,10 +5,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug GUI",
+      "name": "Debug Application",
       "type": "debugpy",
       "request": "launch",
-      "module": "transit_display.gui"
+      "module": "transit_display.main"
     }
   ]
 }

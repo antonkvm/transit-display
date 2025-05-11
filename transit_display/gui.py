@@ -1,7 +1,5 @@
 import datetime
 import logging
-import threading
-import time
 from pathlib import Path
 
 import numpy as np
@@ -14,8 +12,6 @@ logger = logging.getLogger(__name__)
 NUM_ROWS, ROW_HEIGHT = 18, 40  # these need to multiply to 720
 COL_WIDTHS = [80, 540, 100]  # these need to add up to 720
 FRAMEBUFFER = Path("/dev/fb0")
-FETCH_INTERVAL_SEC = 15
-
 FONT_STYLE = "./assets/DejaVuSans.ttf"
 
 FONT_30 = ImageFont.truetype(FONT_STYLE, 30)
@@ -182,77 +178,3 @@ def death_screen(error: str):
     draw.text((360, 200), text, "red", FONT_50, text_anchor)
     draw.multiline_text((10, 300), error, "red", FONT_50, "la", spacing=2)
     write_rgb_to_frame_buffer(screen)
-
-
-def trip_fetch_loop(departures: list[Departure], dep_lock: threading.Lock, event: threading.Event):
-    """Continuously updates the `departures` list reference in-place at an interval and within the thread lock."""
-    while True:
-        try:
-            new_departures = fetch_departures_for_all_stations_concurrently()
-            with dep_lock:
-                if len(new_departures) != 0 and new_departures != departures:
-                    # update the list in-place:
-                    departures.clear()
-                    departures.extend(new_departures)
-                    event.set()
-        except Exception:
-            logger.exception("Error in trip fetch loop thread.")
-        time.sleep(FETCH_INTERVAL_SEC)
-
-
-def clock_loop(event: threading.Event):
-    previous_minute = -1
-    while True:
-        new_minute = datetime.datetime.now().minute
-        clock_changed = new_minute != previous_minute
-        if clock_changed:
-            event.set()
-        previous_minute = new_minute
-
-
-def gui_loop():
-    update_event = threading.Event()
-    update_event.set()  # initialize flag as True to allow first GUI render
-
-    departures = []
-    dep_lock = threading.Lock()
-    fetch_thread = threading.Thread(target=trip_fetch_loop, args=[departures, dep_lock, update_event], daemon=True)
-    fetch_thread.start()
-
-    clock_thread = threading.Thread(target=clock_loop, args=[update_event])
-    clock_thread.start()
-
-    while True:
-        update_event.wait(timeout=15.0)
-
-        # immediately clear event flag, so updates triggered during render are 'queued' for the next loop:
-        update_event.clear()
-
-        # only need a shallow copy bc the Departure objects in the list are immutable (frozen dataclass)
-        with dep_lock:
-            departures_copy = departures.copy()
-
-        screen_img = draw_gui(departures_copy)
-        write_rgb_to_frame_buffer(screen_img)
-
-
-def run():
-    if not FRAMEBUFFER.exists():
-        logger.info(f"No framebuffer {FRAMEBUFFER} detected, showing snapshot in viewer")
-        show_gui_snapshot_window()
-    else:
-        logger.info(f"Framebuffer {FRAMEBUFFER} found, Starting GUI loop")
-        gui_loop()
-
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-    )
-    logger.info("Starting GUI as a module")
-    try:
-        run()
-    except Exception as e:
-        logger.exception("GUI loop failed.")
-        death_screen(str(e))
-        raise

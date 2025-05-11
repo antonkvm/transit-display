@@ -1,12 +1,5 @@
 # systemd service file
-
-# Replace USERNAME with your username WorkingDirectory
-# Adapt the paths in ExecStart and WorkingDirectory to your setup
-# Place this file at /etc/systemd/system/transit-display.service
-
 # More infos in README.md
-
-
 
 [Unit]
 Description=Transit Display GUI
@@ -14,7 +7,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/usr/bin/python3 -m transit_display.gui
+ExecStart=/usr/bin/python3 -m transit_display.main
 WorkingDirectory=/home/USERNAME/transit-display
 Restart=always
 Environment=PYTHONUNBUFFERED=1
