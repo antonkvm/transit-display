@@ -4,11 +4,9 @@ Display the next public transit departures from you favorite stations on a kiosk
 
 ## Some info
 
-Uses the [BVG API](https://v6.bvg.transport.rest/api.html) to fetch the public transit info, so it only works in Berlin and surrounding areas.
-
-Intended to be used with the Pimoroni Hyperpixel 4.0 Square Display, so the resolution is hard coded to 720x720.
-
-The app writes the GUI directly to the framebuffer at `/dev/fb0` as a byte array in BGRa pixel format ('reverse' RGB). This mode is used bc its what the Pimoroni display says it wants when running `fbset -fb /dev/fb0`.
+- Uses the [BVG API](https://v6.bvg.transport.rest/api.html) to fetch the public transit info, so it only works in Berlin and surrounding areas.
+- Built for the Pimoroni Hyperpixel 4.0 Square Display, so the resolution is hard coded to 720x720.
+- The app writes the GUI directly to the framebuffer at `/dev/fb0` as a byte array in BGRa pixel format ('reverse' RGB). This mode is used bc its what the Pimoroni display says it wants when running `fbset -fb /dev/fb0`.
 
 ## Setup
 
@@ -47,22 +45,18 @@ cd transit-display
 python transit_display/trip_fetcher.py
 ~~~
 
-### Run on Raspberry Pi with Pimeroni Square Disaply
+### Run GUI
 
-Set up the Pimoroni display and the Pi. Headless Pi OS works fine.
-
-The Pimoroni setup for this display with older Pi models (like the Zero WH that I use) is a bit messy, but I got it to work with Pi OS Bookworm and Pimoroni legacy drivers, installed with their helper script. Check this [GitHub issue](https://github.com/pimoroni/hyperpixel4/issues/177) for more info.
-
-To run the GUI, you have to run it as a Python module:
+To run the GUI, run the app as a Python module:
 
 ~~~bash
 cd transit-display/
-python -m transit_display.gui
+python -m transit_display.main
 ~~~
 
-If you have a framebuffer `/dev/fb0` available, it will start the app with the fullscreen GUI. If not, then it will try to open a image preview window with as static snapshot of the GUI.
+Note that this assumes you have a framebuffer called `/dev/fb0` with a resolution of 720x720 and BGRa pixel channels, because those are the specs of the my Pimoroni display and I hardcoded these specs.
 
-You can kill the process as expected with `ctrl+c`.
+If you don't have that framebuffer available or no access to it, a static snapshot of the GUI will open in a preview window.
 
 ### Run as a service
 
@@ -70,51 +64,49 @@ To have the app run on startup and to restart and to restart it on exit, you can
 
 ### Steps
 
-In the `transit-display.service` file, change `USERNAME` to your username.
+1. In the `transit-display.service` file, change `USERNAME` to your username.
+2. In the `transit-display.service` file, change the `WorkingDirectory` to the repo root location on your machine.
+3. Copy the file over to `/etc/systemd/system/transit-display.service`.
+4. Enable the service:
 
-In the `transit-display.service` file, change `WorkingDirectory` to the repo root location on your machine.
+    ~~~bash
+    sudo systemctl daemon-reexec
+    ~~~
 
-Then copy the file over to `/etc/systemd/system/transit-display.service`.
+    ~~~bash
+    sudo systemctl daemon-reload
+    ~~~
 
-Enable the service:
+    ~~~bash
+    sudo systemctl enable transit-display.service
+    ~~~
 
-~~~bash
-sudo systemctl daemon-reexec
-~~~
+5. Start the service:
 
-~~~bash
-sudo systemctl daemon-reload
-~~~
+    ~~~bash
+    sudo systemctl start transit-display.service
+    ~~~
 
-~~~bash
-sudo systemctl enable transit-display.service
-~~~
+6. Check service status:
 
-Start the service:
+    ~~~bash
+    sudo systemctl status transit-display.service
+    ~~~
 
-~~~bash
-sudo systemctl start transit-display.service
-~~~
+7. Check logs:
 
-Check service status:
-
-~~~bash
-sudo systemctl status transit-display.service
-~~~
-
-Check logs:
-
-~~~bash
-journalctl -u transit-display.service -f
-~~~
+    ~~~bash
+    journalctl -u transit-display.service -f
+    ~~~
 
 ### Turn off cursor blinking
 
-Even in headless mode, the terminal will be shown, and even if nothing happens, the blinking cursor will write into the framebuffer and be visible.
+In headless mode, the cursor blinking of the terminal may continually overwrite some pixels in the framebuffer.
 
 To turn this off, go to `/boot/firmware/cmdline.txt` (or `/boot/cmdline.txt` sometimes), append the following. Make sure the file contains only a single line!
 
-~~~txt
+~~~bash
+# /boot/firmware/cmdline.txt or /boot/cmdline.txt
 vt.global_cursor_default=0
 ~~~
 
