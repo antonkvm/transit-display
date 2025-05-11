@@ -18,6 +18,7 @@ PRODUCTS = ["suburban", "subway", "tram", "bus", "ferry", "express", "regional"]
 
 FETCH_RETRY_TIMEOUT = 10.0
 
+
 @dataclass(frozen=True)
 class Departure:
     trip_id: str
@@ -95,8 +96,18 @@ def make_table(departures: list[Departure]) -> str:
 
 
 def fetch_departures(station: dict) -> list[Departure]:
-    """Fetch the departures for a station. `Station` dict sets name, station_id, and the desired fetch products."""
+    """Fetch departures for a given station.
 
+    Args:
+        station (dict): A dict with keys `name`, `stationID`, `fetch_products`. `fetch_products` should be a list of desired fetch products (e.g `['bus', 'suburban']`).
+
+    Raises:
+        ValueError: The server responded with a list of departures but the list is empty.
+        requests.RequestException: Raised by the requests module for ambiguous error while handling your request.
+
+    Returns:
+        list[Departure]: A list of containing the departures from that station, with the desired products.
+    """
     station_name = station["name"]
     station_id = station["stationID"]
     desired_products = station["fetch_products"]
@@ -112,12 +123,8 @@ def fetch_departures(station: dict) -> list[Departure]:
         **product_params,
     }
 
-    try:
-        r = requests.get(f"{API_BASE}/stops/{station_id}/departures", request_params)
-        r.raise_for_status()
-    except requests.HTTPError as e:
-        logger.error(f"{station_name}: HTTP error {r.status_code}. Reason: {r.reason}. Error: {e}")
-        raise
+    r = requests.get(f"{API_BASE}/stops/{station_id}/departures", request_params)
+    r.raise_for_status()
 
     departure_dicts: list[dict] = r.json()["departures"]
     departures = [Departure.from_json(d) for d in departure_dicts if d.get("cancelled") is not True]
@@ -136,22 +143,38 @@ def fetch_departures_retry_until_success(station: dict) -> list[Departure]:
     while True:
         try:
             return fetch_departures(station)
-        except (requests.HTTPError, ValueError) as e:
-            logger.warning(f"{station['name']}: Fetch failed - {e}. Retrying in {FETCH_RETRY_TIMEOUT} seconds ...")
+        except (ValueError, requests.RequestException) as e:
+            logger.warning(f"{station['name']}: Fetch failed, retrying in {FETCH_RETRY_TIMEOUT} seconds. Error: {e}")
             time.sleep(FETCH_RETRY_TIMEOUT)
 
 
 def fetch_departures_for_all_stations_concurrently() -> list[Departure]:
+    """Fetch departures for the stations in the config yaml concurrently. Uses one fetch thread per station.
+
+    Raises:
+        Exception: Any unhandled exception emitted by a fetch thread.
+
+    Returns:
+        list[Departure]: A time-sorted list of the fetched departures for all stations.
+    """
     station_dicts = load_stations_from_config()
 
     departures: list[Departure] = []
 
     with ThreadPoolExecutor(max_workers=len(station_dicts)) as executor:
-        futures = [executor.submit(fetch_departures_retry_until_success, station) for station in station_dicts]
+        futures_to_station_map = {
+            executor.submit(fetch_departures_retry_until_success, station): station["name"] for station in station_dicts
+        }
 
-        for future in as_completed(futures):
-            result = future.result()
-            departures.extend(result)
+        for future in as_completed(futures_to_station_map):
+            station_name = futures_to_station_map[future]
+            try:
+                result = future.result()
+                departures.extend(result)
+                logger.info(f"Successfully fetched new trips for {station_name}")
+            except Exception:
+                logger.exception(f"Unexpected fatal error during concurrent fetch of {station_name}")
+                raise
 
     departures = sorted(departures, key=lambda dep: dep.when)  # string comparison but still somehow works
     return departures
