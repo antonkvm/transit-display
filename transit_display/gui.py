@@ -161,7 +161,7 @@ def draw_temperature_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
     subt_xy = (0 + margin_left, ROW_HEIGHT)
 
     draw.text(main_xy, temp, "white", FONT_30, "lm")
-    draw.text(subt_xy, min_max, "grey", FONT_20, "la")
+    draw.text(subt_xy, min_max, "lightgrey", FONT_20, "la")
 
 
 def draw_uv_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
@@ -175,7 +175,7 @@ def draw_uv_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
     subt_xy = (720 - margin_right, ROW_HEIGHT)
 
     draw.text(main_xy, uv_now_str, "white", FONT_30, "rm")
-    draw.text(subt_xy, uv_max_str, "grey", FONT_20, "ra")
+    draw.text(subt_xy, uv_max_str, "lightgrey", FONT_20, "ra")
 
 
 def draw_gui(departures: list[Departure], weather: WeatherData) -> Image.Image:
