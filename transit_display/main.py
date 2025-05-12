@@ -37,16 +37,30 @@ def trip_fetch_loop(departures: list[Departure], dep_lock: threading.Lock, event
         time.sleep(15)
 
 
-#todo: could replace with APscheduler and cron pattern to target the quarter hours exactly
-# only really matters shortly after midnight, where the min/max temp of yesterday could be show for up to 15 minutes.
 def weather_fetch_loop(shared_weather: dict[str, WeatherData], lock: threading.Lock, event: threading.Event):
+    """Continuously fetches and updates weather data at full quarter-hour intervals based on server timestamps."""
+    interval_minutes = 15
+    offset_minutes = 1  # give server a minute to update its data before fetching
+    
     while True:
         weather = fetch_weather_until_success()
 
         with lock:
             shared_weather["data"] = weather
 
-        time.sleep(900)  # update every 15 minutes, (open-meteo's refresh rate)
+        event.set()
+
+        last_server_update = weather.timestamp
+        next_fetch_time = last_server_update + datetime.timedelta(minutes=interval_minutes + offset_minutes)
+        now = datetime.datetime.now()
+        sleep_seconds = (next_fetch_time - now).total_seconds()
+
+        # if for some cosmic reason the server says it's data is from the future, just fetch again in 15 min:
+        if sleep_seconds <= 0:
+            time.sleep(60 * 15)
+            continue
+
+        time.sleep(sleep_seconds)
 
 
 def gui_loop():
