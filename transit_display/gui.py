@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from transit_display.trip_fetcher import Departure, fetch_departures_for_all_stations_concurrently
+from transit_display.weather_fetcher import WeatherData, get_weather
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ COL_WIDTHS = [80, 540, 100]  # these need to add up to 720
 FRAMEBUFFER = Path("/dev/fb0")
 FONT_STYLE = "./assets/DejaVuSans.ttf"
 
+FONT_20 = ImageFont.truetype(FONT_STYLE, 20)
 FONT_30 = ImageFont.truetype(FONT_STYLE, 30)
 FONT_50 = ImageFont.truetype(FONT_STYLE, 50)
 FONT_80 = ImageFont.truetype(FONT_STYLE, 80)
@@ -66,12 +68,12 @@ def truncate_text(text: str, font: ImageFont.ImageFont, draw: ImageDraw.ImageDra
     return text + "..."
 
 
-def get_horizontal_center(x: int, width: int):
-    return x + width // 2
+def get_horizontal_center(left_x: int, box_width: int):
+    return left_x + box_width // 2
 
 
-def get_vertical_center(y: int, height: int) -> int:
-    return y + height // 2
+def get_vertical_center(top_y: int, box_height: int) -> int:
+    return top_y + box_height // 2
 
 
 def draw_destination(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: int, col_width: int):
@@ -105,19 +107,7 @@ def draw_depart_time(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y:
     draw.text((text_x, text_y), text, text_color, FONT_30, text_anchor)
 
 
-def draw_clock(draw: ImageDraw.ImageDraw):
-    now = datetime.datetime.now()
-    # date_str = now.strftime("%a, %d. %b %Y")
-    time_str = now.strftime("%H:%M")
-
-    text_anchor = "mm"
-    x = 360
-    y = get_vertical_center(y=0, height=ROW_HEIGHT * 2)
-
-    draw.text((x, y), time_str, "white", FONT_80, text_anchor)
-
-
-def draw_trip_list(departures: list[Departure], draw: ImageDraw.ImageDraw):
+def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
     for row in range(NUM_ROWS):
         # leave 2 rows at the top to display time and date
         y = (row + 2) * ROW_HEIGHT
@@ -142,11 +132,58 @@ def draw_trip_list(departures: list[Departure], draw: ImageDraw.ImageDraw):
                 draw_depart_time(departure, draw, x, y, col_width)
 
 
-def draw_gui(departures: list[Departure]) -> Image.Image:
+def draw_clock(draw: ImageDraw.ImageDraw):
+    now = datetime.datetime.now()
+    # date_str = now.strftime("%a, %d. %b %Y")
+    time_str = now.strftime("%H:%M")
+
+    text_anchor = "mm"
+    x = 360
+    y = get_vertical_center(top_y=0, box_height=ROW_HEIGHT * 2)
+
+    draw.text((x, y), time_str, "white", FONT_80, text_anchor)
+
+
+def draw_weather_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
+    if weather:
+        draw_temperature_info(draw, weather)
+        draw_uv_info(draw, weather)
+    else:
+        logger.warning('No wether data available to draw, leaving area blank')
+
+
+def draw_temperature_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
+    temp = f"{weather.temperature}°"
+    min_max = f"\u2191{weather.temperature_daily_max}° \u2193{weather.temperature_daily_min}°"
+
+    margin_left = 10
+    main_xy = (0 + margin_left, get_vertical_center(0, ROW_HEIGHT))
+    subt_xy = (0 + margin_left, ROW_HEIGHT)
+
+    draw.text(main_xy, temp, "white", FONT_30, "lm")
+    draw.text(subt_xy, min_max, "grey", FONT_20, "la")
+
+
+def draw_uv_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
+    uv_now, uv_max = (0 if uv == 0 else uv for uv in (weather.uv_index, weather.uv_index_daily_max))
+
+    uv_now_str = f"\u2600{uv_now}"
+    uv_max_str = f"\u2191{uv_max}"
+
+    margin_right = 10
+    main_xy = (720 - margin_right, get_vertical_center(0, ROW_HEIGHT))
+    subt_xy = (720 - margin_right, ROW_HEIGHT)
+
+    draw.text(main_xy, uv_now_str, "white", FONT_30, "rm")
+    draw.text(subt_xy, uv_max_str, "grey", FONT_20, "ra")
+
+
+def draw_gui(departures: list[Departure], weather: WeatherData) -> Image.Image:
     image = Image.new("RGB", (720, 720), "black")
     draw = ImageDraw.Draw(image)
     draw_clock(draw)
-    draw_trip_list(departures, draw)
+    draw_weather_info(draw, weather)
+    draw_trip_list(draw, departures)
     return image
 
 
@@ -166,7 +203,8 @@ def write_rgb_to_frame_buffer(rgb_image: Image.Image):
 
 def show_gui_snapshot_window():
     departures = fetch_departures_for_all_stations_concurrently()
-    img = draw_gui(departures)
+    weather = get_weather()
+    img = draw_gui(departures, weather)
     img.show()
 
 
