@@ -41,7 +41,7 @@ def weather_fetch_loop(shared_weather: dict[str, WeatherData], lock: threading.L
     """Continuously fetches and updates weather data at full quarter-hour intervals based on server timestamps."""
     interval_minutes = 15
     offset_minutes = 1  # give server a minute to update its data before fetching
-    
+
     while True:
         weather = fetch_weather_until_success()
 
@@ -55,11 +55,15 @@ def weather_fetch_loop(shared_weather: dict[str, WeatherData], lock: threading.L
         now = datetime.datetime.now()
         sleep_seconds = (next_fetch_time - now).total_seconds()
 
-        # if for some cosmic reason the server says it's data is from the future, just fetch again in 15 min:
         if sleep_seconds <= 0:
+            logger.warning(
+                f"Cosmic event: weather server returned data with future timestamp: {weather.timestamp}. "
+                f"Scheduling next fetch for {(now + datetime.timedelta(minutes=15))} (15 minutes from now)."
+            )
             time.sleep(60 * 15)
             continue
 
+        logger.info(f"Scheduled next weather fetch for {next_fetch_time}. Sleeping for {sleep_seconds} seconds.")
         time.sleep(sleep_seconds)
 
 
