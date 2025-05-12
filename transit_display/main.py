@@ -22,7 +22,7 @@ def clock_loop(event: threading.Event):
 
 
 def trip_fetch_loop(departures: list[Departure], dep_lock: threading.Lock, event: threading.Event):
-    """Continuously updates the `departures` list reference in-place at an interval and within the thread lock."""
+    """Continuously updates the `departures` list reference in-place every 15 seconds and within the thread lock."""
     while True:
         new_departures = fetch_departures_for_all_stations_concurrently()
 
