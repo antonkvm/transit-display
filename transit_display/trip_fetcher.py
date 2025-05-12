@@ -18,6 +18,9 @@ PRODUCTS = ["suburban", "subway", "tram", "bus", "ferry", "express", "regional"]
 
 FETCH_RETRY_TIMEOUT = 10.0
 
+# have 18 rows, 2 for header, so minumum 16:
+NUM_FETCH_TRIPS_PER_STATION = 20
+
 
 @dataclass(frozen=True)
 class Departure:
@@ -116,7 +119,7 @@ def fetch_departures(station: dict) -> list[Departure]:
     request_params = {
         "when": "now",
         "duration": 600,
-        "results": 12,
+        "results": NUM_FETCH_TRIPS_PER_STATION,
         "linesOfStops": False,
         "remarks": True,
         "language": "de",
