@@ -18,6 +18,7 @@ def clock_loop(event: threading.Event):
         if clock_changed:
             event.set()
         previous_minute = new_minute
+        time.sleep(1)
 
 
 def trip_fetch_loop(departures: list[Departure], dep_lock: threading.Lock, event: threading.Event):
