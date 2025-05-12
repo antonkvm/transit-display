@@ -27,12 +27,24 @@ def trip_fetch_loop(departures: list[Departure], dep_lock: threading.Lock, event
         new_departures = fetch_departures_for_all_stations_concurrently()
 
         with dep_lock:
-            if len(new_departures) != 0 and new_departures != departures:
+            old_set = set(departures)
+            new_set = set(new_departures)
+
+            if new_set != old_set and len(new_departures) != 0:
+                new_or_changed = new_set - old_set
+                discarded = old_set - new_set
+                logger.info(
+                    "Successfully fetched new departures: "
+                    + f"{len(new_or_changed)} new or changed, {len(discarded)} discarded"
+                )
+
                 # update the list in-place:
                 departures.clear()
                 departures.extend(new_departures)
-
                 event.set()
+
+            else:
+                logger.debug("Successfully fetched departures, but nothing is new.")
 
         time.sleep(15)
 
@@ -58,12 +70,14 @@ def weather_fetch_loop(shared_weather: dict[str, WeatherData], lock: threading.L
         if sleep_seconds <= 0:
             logger.warning(
                 f"Cosmic event: weather server returned data with future timestamp: {weather.timestamp}. "
-                f"Scheduling next fetch for {(now + datetime.timedelta(minutes=15))} (15 minutes from now)."
+                + f"Scheduling next fetch for {(now + datetime.timedelta(minutes=15))} (15 minutes from now)."
             )
             time.sleep(60 * 15)
             continue
 
-        logger.info(f"Scheduled next weather fetch for {next_fetch_time}. Sleeping for {sleep_seconds} seconds.")
+        logger.info(
+            f"Scheduled next weather fetch for {next_fetch_time}. Sleeping for {round(sleep_seconds, 2)} seconds."
+        )
         time.sleep(sleep_seconds)
 
 
@@ -76,9 +90,13 @@ def gui_loop():
     weather = {"data": None}  # dicts allow in-place mutation of values from threads and avoids local rebinding
     weather_lock = threading.Lock()
 
-    threading.Thread(target=trip_fetch_loop, args=[departures, dep_lock, update_event], daemon=True).start()
-    threading.Thread(target=clock_loop, args=[update_event], daemon=True).start()
-    threading.Thread(target=weather_fetch_loop, args=[weather, weather_lock, update_event], daemon=True).start()
+    threading.Thread(
+        target=trip_fetch_loop, name="TripFetchThread", args=[departures, dep_lock, update_event], daemon=True
+    ).start()
+    threading.Thread(target=clock_loop, name="ClockThread", args=[update_event], daemon=True).start()
+    threading.Thread(
+        target=weather_fetch_loop, name="WeatherThread", args=[weather, weather_lock, update_event], daemon=True
+    ).start()
 
     while True:
         update_event.wait(timeout=15.0)
@@ -112,7 +130,10 @@ def run():
 
 if __name__ == "__main__":
     logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        level=logging.INFO,
+        # format="%(asctime)s - %(levelname)s - %(threadName)s - %(message)s",
+        format="%(asctime)s [%(threadName)s] %(levelname)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     logger.info("Starting GUI as a module")
     run()

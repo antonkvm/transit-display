@@ -174,7 +174,7 @@ def fetch_departures_for_all_stations_concurrently() -> list[Departure]:
             try:
                 result = future.result()
                 departures.extend(result)
-                logger.info(f"Successfully fetched new trips for {station_name}")
+                logger.debug(f"Successfully fetched new trips for {station_name}")
             except Exception:
                 logger.exception(f"Unexpected fatal error during concurrent fetch of {station_name}")
                 raise
