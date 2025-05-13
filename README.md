@@ -1,12 +1,15 @@
 # transit-display
 
-Display the next public transit departures from you favorite stations on a kiosk-style screen.
+Displays live public transit departures and current weather info on a kiosk-style screen, optimized for low-resource devices like the Raspberry Pi.
 
-## Some info
 
-- Uses the [BVG API](https://v6.bvg.transport.rest/api.html) to fetch the public transit info, so it only works in Berlin and surrounding areas.
-- Built for the Pimoroni Hyperpixel 4.0 Square Display, so the resolution is hard coded to 720x720.
-- The app writes the GUI directly to the framebuffer at `/dev/fb0` as a byte array in BGRa pixel format ('reverse' RGB). This mode is used bc its what the Pimoroni display says it wants when running `fbset -fb /dev/fb0`.
+## Basics
+
+- **Public transit**: Uses the [BVG API](https://v6.bvg.transport.rest/api.html) to fetch the public transit info, so it only works in Berlin and surrounding areas.
+- **Weather data**: Uses [Open-meteo API](https://open-meteo.com) to fetch weather data. 
+- **Multithreading**: To update the on-screen components independently, dedicated background threads are implemented. 
+- **Lighweight rendering**: To avoid unnecessary overhead on the low-powered Pi Zero, the app does not use a high-level GUI framework and instead uses pixel coordinates to compose the interface as an image with [Pillow](https://pypi.org/project/pillow/), which is then written straight into the framebuffer. 
+- **Hardware-specific design**: This app was purpose-built for the Pimoroni Hyperpixel 4.0 Square Display (because I still had one from an old project), using its exact resolution and pixel format. While not flexible, targeting a specific known hardware allowed for efficient, low-overhead rendering and simplified development without having to bother with scaling logic or abstraction layers. 
 
 ## Setup
 
@@ -54,15 +57,13 @@ cd transit-display/
 python -m transit_display.main
 ~~~
 
-Note that this assumes you have a framebuffer called `/dev/fb0` with a resolution of 720x720 and BGRa pixel channels, because those are the specs of the my Pimoroni display and I hardcoded these specs.
+If you have a framebugger available at `/dev/fb0`, the GUI loop will launch and display on screen. 
 
 If you don't have that framebuffer available or no access to it, a static snapshot of the GUI will open in a preview window.
 
 ### Run as a service
 
 To have the app run on startup and to restart and to restart it on exit, you can add it as a systemd service using the `transit-display.service` file.
-
-### Steps
 
 1. In the `transit-display.service` file, change `USERNAME` to your username.
 2. In the `transit-display.service` file, change the `WorkingDirectory` to the repo root location on your machine.
