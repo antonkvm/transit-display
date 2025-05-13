@@ -7,7 +7,7 @@ Displays live public transit departures and current weather info on a small kios
 - **Public transit**: Uses the [BVG API](https://v6.bvg.transport.rest/api.html) to fetch the public transit info, so it only works in Berlin and surrounding areas.
 - **Weather data**: Uses [Open-meteo API](https://open-meteo.com) to fetch weather data for Berlin.
 - **Multithreading**: To update the on-screen components independently, dedicated background threads are implemented.
-- **Lighweight rendering**: To avoid unnecessary overhead on the low-powered Pi Zero, the app does not use a high-level GUI framework and instead uses pixel coordinates to compose the interface as an image with [Pillow](https://pypi.org/project/pillow/), which is then written straight into the framebuffer.
+- **Lighweight rendering**: To minimize overhead on the low-powered Pi Zero, the app avoids using a desktop environment or high-level GUI framework. Instead, it constructs the interface using pixel coordinates with [Pillow](https://pypi.org/project/pillow/) and writes the resulting image directly to the framebuffer.
 - **Hardware-specific design**: This app was purpose-built for the Pimoroni Hyperpixel 4.0 Square Display (I still had one from an old project), therefore the resolution and pixel format are hard-coded. While not flexible, targeting a specific known hardware allowed for efficient, low-overhead rendering and simplified development without having to bother with scaling logic or abstraction layers.
 
 ## Setup
