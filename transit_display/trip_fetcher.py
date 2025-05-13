@@ -27,7 +27,7 @@ class Departure:
     trip_id: str
     line: str
     destination: str
-    when: str
+    when: datetime
     delay_seconds: int
     delay_minutes: int
     delay_minutes_str: str
@@ -49,7 +49,7 @@ class Departure:
 
         destination = destination.replace("(Berlin)", "").strip()
 
-        when = datetime.fromisoformat(when).strftime("%H:%M")
+        when = datetime.fromisoformat(when)
 
         delay_minutes: int = delay_seconds // 60 if delay_seconds else 0
         if delay_minutes == 0:
@@ -99,7 +99,7 @@ def make_table(departures: list[Departure]) -> str:
 
 
 def fetch_departures(station: dict) -> list[Departure]:
-    """Fetch departures for a given station.
+    """Fetch departures for a given station as a time-sorted list.
 
     Args:
         station (dict): A dict with keys `name`, `stationID`, `fetch_products`. `fetch_products` should be a list of desired fetch products (e.g `['bus', 'suburban']`).
@@ -109,7 +109,7 @@ def fetch_departures(station: dict) -> list[Departure]:
         requests.RequestException: Raised by the requests module for ambiguous error while handling your request.
 
     Returns:
-        list[Departure]: A list of containing the departures from that station, with the desired products.
+        list[Departure]: A time-sorted list of containing the departures from that station, with the desired products.
     """
     station_name = station["name"]
     station_id = station["stationID"]
@@ -133,7 +133,7 @@ def fetch_departures(station: dict) -> list[Departure]:
     departures = [Departure.from_json(d) for d in departure_dicts if d.get("cancelled") is not True]
 
     departures = drop_duplicate_departures(departures)
-    departures = sorted(departures, key=lambda d: d.when)  # string comparison but still somehow works
+    departures = sorted(departures, key=lambda d: d.when)
 
     if not departures:
         raise ValueError(f"{station_name}: Received empty departures list")

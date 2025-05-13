@@ -1,5 +1,5 @@
-import datetime
 import logging
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -90,7 +90,7 @@ def draw_destination(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y:
 
 
 def draw_depart_time(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: int, col_width: int):
-    text = departure.when
+    text = datetime.strftime(departure.when, "%H:%M")
     delay_int = departure.delay_minutes
 
     if delay_int > 0:
@@ -133,7 +133,7 @@ def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
 
 
 def draw_clock(draw: ImageDraw.ImageDraw):
-    now = datetime.datetime.now()
+    now = datetime.now()
     # date_str = now.strftime("%a, %d. %b %Y")
     time_str = now.strftime("%H:%M")
 
