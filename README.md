@@ -56,9 +56,9 @@ cd transit-display/
 python -m transit_display.main
 ~~~
 
-If you have a framebugger available at `/dev/fb0`, the GUI loop will launch and display on screen.
+If you have a framebuffee available at `/dev/fb0`, the GUI loop will launch and display on screen.
 
-If you don't have that framebuffer available or no access to it, a static snapshot of the GUI will open in a preview window.
+If you don't have that framebuffer available, a static snapshot of the GUI will open in a preview window.
 
 ### Run as a service
 
