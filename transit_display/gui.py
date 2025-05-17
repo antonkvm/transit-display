@@ -13,14 +13,20 @@ logger = logging.getLogger(__name__)
 NUM_ROWS, ROW_HEIGHT = 18, 40  # these need to multiply to 720
 COL_WIDTHS = [80, 540, 100]  # these need to add up to 720
 FRAMEBUFFER = Path("/dev/fb0")
-FONT_STYLE = "./assets/DejaVuSans.ttf"
+
+FONT_STYLE = str(Path(__file__).absolute().parent / "assets/DejaVuSans.ttf")
+FONT_STYLE_BOLD = str(Path(__file__).absolute().parent / "assets/DejaVuSansCondensed-Bold.ttf")
 
 FONT_20 = ImageFont.truetype(FONT_STYLE, 20)
 FONT_30 = ImageFont.truetype(FONT_STYLE, 30)
 FONT_50 = ImageFont.truetype(FONT_STYLE, 50)
 FONT_80 = ImageFont.truetype(FONT_STYLE, 80)
+FONT_20_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 20)
+FONT_30_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 30)
+FONT_50_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 50)
+FONT_80_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 80)
 
-SBAHN_GREEN = (64, 131, 53)
+SBAHN_GREEN = (0, 119, 52)
 METROBUS_YELLOW = (233, 208, 33)
 BUS_PURPLE = (160, 1, 121)
 LATE_RED = (255, 0, 0)
@@ -57,7 +63,7 @@ def draw_line_info(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: i
     text_x = get_horizontal_center(x, col_width) + 1
     text_y = get_vertical_center(y, ROW_HEIGHT) + 1
 
-    draw.text((text_x, text_y), departure.line, text_color, FONT_30, text_anchor)
+    draw.text((text_x, text_y), departure.line, text_color, FONT_30_BOLD, text_anchor)
 
 
 def truncate_text(text: str, font: ImageFont.ImageFont, draw: ImageDraw.ImageDraw, max_width: int) -> str:
@@ -104,7 +110,7 @@ def draw_depart_time(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y:
     text_x = get_horizontal_center(x, col_width)
     text_y = get_vertical_center(y, ROW_HEIGHT)
 
-    draw.text((text_x, text_y), text, text_color, FONT_30, text_anchor)
+    draw.text((text_x, text_y), text, text_color, FONT_30_BOLD, text_anchor)
 
 
 def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
@@ -163,8 +169,8 @@ def draw_temperature_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
     main_xy = (0 + margin_left, get_vertical_center(0, ROW_HEIGHT))
     subt_xy = (0 + margin_left, ROW_HEIGHT)
 
-    draw.text(main_xy, temp, "white", FONT_30, "lm")
-    draw.text(subt_xy, min_max, "lightgrey", FONT_20, "la")
+    draw.text(main_xy, temp, "white", FONT_30_BOLD, "lm")
+    draw.text(subt_xy, min_max, "lightgrey", FONT_20_BOLD, "la")
 
 
 def draw_uv_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
@@ -177,8 +183,8 @@ def draw_uv_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
     main_xy = (720 - margin_right, get_vertical_center(0, ROW_HEIGHT))
     subt_xy = (720 - margin_right, ROW_HEIGHT)
 
-    draw.text(main_xy, uv_now_str, "white", FONT_30, "rm")
-    draw.text(subt_xy, uv_max_str, "lightgrey", FONT_20, "ra")
+    draw.text(main_xy, uv_now_str, "white", FONT_30_BOLD, "rm")
+    draw.text(subt_xy, uv_max_str, "lightgrey", FONT_20_BOLD, "ra")
 
 
 def draw_gui(departures: list[Departure], weather: WeatherData) -> Image.Image:
