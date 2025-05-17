@@ -158,7 +158,7 @@ def draw_weather_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
         draw_temperature_info(draw, weather)
         draw_uv_info(draw, weather)
     else:
-        logger.warning('No weather data available to draw, leaving area blank')
+        logger.warning("No weather data available to draw, leaving area blank")
 
 
 def draw_temperature_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
