@@ -35,7 +35,7 @@ EARLY_YELLOW = (255, 255, 0)
 
 def draw_line_info(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: int, col_width: int):
     # subtract 1 pixel from the bottom right boundary bc pixel indices start at 0
-    padding = 5
+    padding = 3
     bg_bbox_topleft = (x + padding, y + padding)
     bg_bbox_bottomright = (x + col_width - 1 - padding, y + ROW_HEIGHT - 1 - padding)
     bg_bbox = [bg_bbox_topleft, bg_bbox_bottomright]
@@ -53,7 +53,7 @@ def draw_line_info(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: i
         bg_color = "grey"
         text_color = "white"
 
-    draw.rounded_rectangle(bg_bbox, 7, bg_color)
+    draw.rounded_rectangle(bg_bbox, 15, bg_color)
 
     # for easy centering, set text anchor to vertical and horizontal middle of text
     text_anchor = "mm"
