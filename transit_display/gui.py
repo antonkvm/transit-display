@@ -108,9 +108,12 @@ def draw_depart_time(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y:
 
 
 def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
-    for row in range(NUM_ROWS):
-        # leave 2 rows at the top to display time and date
-        y = (row + 2) * ROW_HEIGHT
+    # leave 2 rows at the top for clock an weather:
+    for row in range(2, NUM_ROWS):
+        y = row * ROW_HEIGHT
+
+        if row % 2 == 0:
+            draw.rectangle(((0, y), (720, y + ROW_HEIGHT)), (25, 25, 25))
 
         try:
             departure = departures[row]
