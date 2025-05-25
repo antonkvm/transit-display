@@ -66,7 +66,7 @@ def draw_line_info(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: i
     draw.text((text_x, text_y), departure.line, text_color, FONT_30_BOLD, text_anchor)
 
 
-def truncate_text(text: str, font: ImageFont.ImageFont, draw: ImageDraw.ImageDraw, max_width: int) -> str:
+def truncate_text(text: str, font: ImageFont.FreeTypeFont, draw: ImageDraw.ImageDraw, max_width: int) -> str:
     if draw.textlength(text, font) <= max_width:
         return text
     while draw.textlength(text + "...", font) > max_width:
