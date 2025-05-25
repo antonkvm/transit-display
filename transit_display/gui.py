@@ -153,7 +153,7 @@ def draw_clock(draw: ImageDraw.ImageDraw):
     draw.text((x, y), time_str, "white", FONT_80, text_anchor)
 
 
-def draw_weather_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
+def draw_weather_info(draw: ImageDraw.ImageDraw, weather: WeatherData | None):
     if weather:
         draw_temperature_info(draw, weather)
         draw_uv_info(draw, weather)
@@ -187,7 +187,7 @@ def draw_uv_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
     draw.text(subt_xy, uv_max_str, "lightgrey", FONT_20_BOLD, "ra")
 
 
-def draw_gui(departures: list[Departure], weather: WeatherData) -> Image.Image:
+def draw_gui(departures: list[Departure], weather: WeatherData | None) -> Image.Image:
     image = Image.new("RGB", (720, 720), "black")
     draw = ImageDraw.Draw(image)
     draw_clock(draw)
