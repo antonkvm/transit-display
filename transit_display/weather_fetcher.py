@@ -51,7 +51,7 @@ def fetch_weather_until_success():
         try:
             return get_weather()
         except (ValueError, requests.RequestException) as e:
-            logger.warning(f"Weather fetch failed, retrying in {retry_delay_seconds}. Error: {e}")
+            logger.warning(f"Weather fetch failed, retrying in {retry_delay_seconds} seconds. Error: {e}")
             time.sleep(retry_delay_seconds)
 
 
