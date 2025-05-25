@@ -38,7 +38,7 @@ class Departure:
         trip_id: str = json["tripId"]
         line: str = json["line"]["name"]
         destination: str = json["destination"]["name"]
-        when: str = json["when"]
+        when: datetime = datetime.fromisoformat(json["when"])
         delay_seconds: int = json.get("delay") or 0
         product: str = json["line"]["product"]
 
@@ -48,8 +48,6 @@ class Departure:
             destination = "\u21bb " + destination
 
         destination = destination.replace("(Berlin)", "").strip()
-
-        when = datetime.fromisoformat(when)
 
         delay_minutes: int = delay_seconds // 60 if delay_seconds else 0
         if delay_minutes == 0:
