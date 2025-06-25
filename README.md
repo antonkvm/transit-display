@@ -56,13 +56,13 @@ cd transit-display/
 python -m transit_display.main
 ~~~
 
-If you have a framebuffee available at `/dev/fb0`, the GUI loop will launch and display on screen.
+If you have a framebuffer available at `/dev/fb0`, the GUI loop will launch and display on screen.
 
 If you don't have that framebuffer available, a static snapshot of the GUI will open in a preview window.
 
 ### Run as a service
 
-To have the app run on startup and to restart and to restart it on exit, you can add it as a systemd service using the `transit-display.service` file.
+To have the app run on startup and restart it on exit, you can add it as a systemd service using the `transit-display.service` file.
 
 1. In the `transit-display.service` file, change `USERNAME` to your username.
 2. In the `transit-display.service` file, change the `WorkingDirectory` to the repo root location on your machine.
