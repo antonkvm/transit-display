@@ -177,7 +177,7 @@ def fetch_departures_for_all_stations_concurrently() -> list[Departure]:
                 logger.exception(f"Unexpected fatal error during concurrent fetch of {station_name}")
                 raise
 
-    departures = sorted(departures, key=lambda dep: dep.when)  # string comparison but still somehow works
+    departures = sorted(departures, key=lambda dep: dep.when)
     return departures
 
 
