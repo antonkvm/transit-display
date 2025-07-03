@@ -4,6 +4,7 @@ import threading
 import time
 
 import transit_display.gui as gui
+from transit_display.connection_checker import wifi_check_loop
 from transit_display.trip_fetcher import Departure, fetch_departures_for_all_stations_concurrently
 from transit_display.weather_fetcher import WeatherData, fetch_weather_until_success
 
@@ -97,6 +98,7 @@ def gui_loop():
     threading.Thread(
         target=weather_fetch_loop, name="WeatherThread", args=[weather, weather_lock, update_event], daemon=True
     ).start()
+    threading.Thread(target=wifi_check_loop, name="WifiCheckThread", daemon=True).start()
 
     while True:
         update_event.wait(timeout=15.0)

@@ -34,28 +34,30 @@ def get_wifi_connection_name() -> str:
         raise
 
 
+# time will tell if the permissions for this command work. When wifi disconnects again, I will check the logs.
 def reconnect_wifi(conn_name: str):
-    pass
+    try:
+        subprocess.run(["sudo", "nmcli", "connection", "up", conn_name], check=True)
+        logger.info(f'Restarted wifi connection named "{conn_name}" using nmcli.')
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to restart wifi using nmcli: {e}")
+        raise
 
 
-def has_internet() -> bool:
-    pass
-
-
-#todo: I am checking wifi status again after I confirmed it was down, that's reduntant.
 def try_reconnect_loop(conn_name: str):
     attempts = 0
     retry_delay = 10
-    while not has_internet() and not wifi_connected(conn_name):
+    while True:
         if attempts > 10:
             retry_delay = 60
         elif attempts > 20:
             raise RuntimeError(f"Max retries ({attempts}) exceeded for wifi reconnect.")
         logger.error("Wifi seems to be down. Trying to reconnect...")
         reconnect_wifi(conn_name)
+        if wifi_connected(conn_name):
+            logger.info("Wifi connection reestablished.")
+            break
         time.sleep(retry_delay)
-    else:
-        logger.info("Wifi connection reestablished.")
 
 
 # todo: this loop runs on a thread and if wifi is down should cause a hint on the GUI
@@ -63,6 +65,7 @@ def wifi_check_loop():
     wifi_conn = get_wifi_connection_name()
 
     while True:
-        if not has_internet() and not wifi_connected(wifi_conn):
+        if not wifi_connected(wifi_conn):
+            logger.error("Wifi test indicated lost connection, attempting to reconnect...")
             try_reconnect_loop(wifi_conn)
         time.sleep(30)
