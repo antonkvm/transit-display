@@ -4,8 +4,8 @@ import threading
 import time
 
 import transit_display.gui as gui
-from transit_display.trip_fetcher import Departure, fetch_departures_for_all_stations_concurrently
-from transit_display.weather_fetcher import WeatherData, fetch_weather_until_success
+from transit_display.trip_fetcher import trip_fetch_loop
+from transit_display.weather_fetcher import weather_fetch_loop
 from transit_display.wifi_checker import wifi_check_loop
 
 logger = logging.getLogger(__name__)
@@ -22,67 +22,7 @@ def clock_loop(event: threading.Event):
         time.sleep(1)
 
 
-def trip_fetch_loop(departures: list[Departure], dep_lock: threading.Lock, event: threading.Event):
-    """Continuously updates the `departures` list reference in-place every 15 seconds and within the thread lock."""
-    while True:
-        new_departures = fetch_departures_for_all_stations_concurrently()
-
-        with dep_lock:
-            old_set = set(departures)
-            new_set = set(new_departures)
-
-            if new_set != old_set and len(new_departures) != 0:
-                new_or_changed = new_set - old_set
-                discarded = old_set - new_set
-                logger.info(
-                    "Successfully fetched new departures: "
-                    + f"{len(new_or_changed)} new or changed, {len(discarded)} discarded"
-                )
-
-                # update the list in-place:
-                departures.clear()
-                departures.extend(new_departures)
-                event.set()
-
-            else:
-                logger.debug("Successfully fetched departures, but nothing is new.")
-
-        time.sleep(15)
-
-
-def weather_fetch_loop(shared_weather: dict[str, WeatherData], lock: threading.Lock, event: threading.Event):
-    """Continuously fetches and updates weather data at full quarter-hour intervals based on server timestamps."""
-    interval_minutes = 15
-    offset_minutes = 1  # give server a minute to update its data before fetching
-
-    while True:
-        weather = fetch_weather_until_success()
-
-        with lock:
-            shared_weather["data"] = weather
-
-        event.set()
-
-        last_server_update = weather.timestamp
-        next_fetch_time = last_server_update + datetime.timedelta(minutes=interval_minutes + offset_minutes)
-        now = datetime.datetime.now()
-        sleep_seconds = (next_fetch_time - now).total_seconds()
-
-        if sleep_seconds <= 0:
-            logger.warning(
-                f"Cosmic event: weather server returned data with future timestamp: {weather.timestamp}. "
-                + f"Scheduling next fetch for {(now + datetime.timedelta(minutes=15))} (15 minutes from now)."
-            )
-            time.sleep(60 * 15)
-            continue
-
-        logger.info(
-            f"Scheduled next weather fetch for {next_fetch_time}. Sleeping for {round(sleep_seconds, 2)} seconds."
-        )
-        time.sleep(sleep_seconds)
-
-
-def gui_loop():
+def main_loop():
     update_event = threading.Event()
     update_event.set()  # initialize flag as True to allow first GUI render
 
@@ -123,7 +63,7 @@ def run():
     else:
         logger.info(f"Framebuffer {gui.FRAMEBUFFER} found, Starting GUI loop")
         try:
-            gui_loop()
+            main_loop()
         except Exception as e:
             logger.exception("GUI loop failed.")
             gui.death_screen(str(e))

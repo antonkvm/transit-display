@@ -1,4 +1,5 @@
 import logging
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -179,6 +180,34 @@ def fetch_departures_for_all_stations_concurrently() -> list[Departure]:
 
     departures = sorted(departures, key=lambda dep: dep.when)
     return departures
+
+
+def trip_fetch_loop(departures: list[Departure], dep_lock: threading.Lock, event: threading.Event):
+    """Continuously updates the `departures` list reference in-place every 15 seconds and within the thread lock."""
+    while True:
+        new_departures = fetch_departures_for_all_stations_concurrently()
+
+        with dep_lock:
+            old_set = set(departures)
+            new_set = set(new_departures)
+
+            if new_set != old_set and len(new_departures) != 0:
+                new_or_changed = new_set - old_set
+                discarded = old_set - new_set
+                logger.info(
+                    "Successfully fetched new departures: "
+                    + f"{len(new_or_changed)} new or changed, {len(discarded)} discarded"
+                )
+
+                # update the list in-place:
+                departures.clear()
+                departures.extend(new_departures)
+                event.set()
+
+            else:
+                logger.debug("Successfully fetched departures, but nothing is new.")
+
+        time.sleep(15)
 
 
 if __name__ == "__main__":
