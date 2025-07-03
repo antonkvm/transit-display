@@ -4,9 +4,9 @@ import threading
 import time
 
 import transit_display.gui as gui
-from transit_display.connection_checker import wifi_check_loop
 from transit_display.trip_fetcher import Departure, fetch_departures_for_all_stations_concurrently
 from transit_display.weather_fetcher import WeatherData, fetch_weather_until_success
+from transit_display.wifi_checker import wifi_check_loop
 
 logger = logging.getLogger(__name__)
 
