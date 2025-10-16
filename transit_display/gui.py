@@ -147,8 +147,9 @@ def draw_clock(draw: ImageDraw.ImageDraw):
     time_str = now.strftime("%H:%M")
 
     text_anchor = "mm"
+    box_height = ROW_HEIGHT * 2
     x = 360
-    y = get_vertical_center(top_y=0, box_height=ROW_HEIGHT * 2)
+    y = get_vertical_center(top_y=0, box_height=box_height)
 
     draw.text((x, y), time_str, "white", FONT_80, text_anchor)
 
