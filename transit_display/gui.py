@@ -163,7 +163,7 @@ def draw_date(draw: ImageDraw.ImageDraw):
     x = 360
     y = ROW_HEIGHT * 2
 
-    draw.text((x, y), date_str, "white", FONT_20, text_anchor)
+    draw.text((x, y), date_str, "white", FONT_30, text_anchor)
 
 
 def draw_weather_info(draw: ImageDraw.ImageDraw, weather: WeatherData | None):
