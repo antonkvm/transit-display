@@ -11,7 +11,7 @@ from transit_display.weather_fetcher import WeatherData, get_weather
 logger = logging.getLogger(__name__)
 
 NUM_ROWS, ROW_HEIGHT = 18, 40  # these need to multiply to 720
-COL_WIDTHS = [80, 540, 100]  # these need to add up to 720
+COL_WIDTHS = [80, 460, 80, 100]  # these need to add up to 720
 FRAMEBUFFER = Path("/dev/fb0")
 
 FONT_STYLE = str(Path(__file__).absolute().parent / "assets/DejaVuSans.ttf")
@@ -21,6 +21,7 @@ FONT_20 = ImageFont.truetype(FONT_STYLE, 20)
 FONT_30 = ImageFont.truetype(FONT_STYLE, 30)
 FONT_50 = ImageFont.truetype(FONT_STYLE, 50)
 FONT_80 = ImageFont.truetype(FONT_STYLE, 80)
+FONT_16_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 16)
 FONT_20_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 20)
 FONT_30_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 30)
 FONT_50_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 50)
@@ -31,6 +32,7 @@ METROBUS_YELLOW = (233, 208, 33)
 BUS_PURPLE = (160, 1, 121)
 LATE_RED = (255, 0, 0)
 EARLY_YELLOW = (255, 255, 0)
+WHITE = (255, 255, 255)
 
 
 def draw_line_info(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: int, col_width: int):
@@ -95,22 +97,27 @@ def draw_destination(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y:
     draw.text((text_x, text_y), text, "white", FONT_30, text_anchor)
 
 
-def draw_depart_time(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: int, col_width: int):
+def draw_depart_time(
+    departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: int, col_width: int, text_color: tuple[int, int, int]
+):
     text = datetime.strftime(departure.when, "%H:%M")
-    delay_int = departure.delay_minutes
-
-    if delay_int > 0:
-        text_color = LATE_RED
-    elif delay_int < 0:
-        text_color = EARLY_YELLOW
-    else:
-        text_color = "white"
-
-    text_anchor = "mm"  # middle-middle
-    text_x = get_horizontal_center(x, col_width)
+    text_anchor = "rm"  # middle-middle
+    padding_right = 5
+    text_x = x + col_width - padding_right
     text_y = get_vertical_center(y, ROW_HEIGHT)
 
     draw.text((text_x, text_y), text, text_color, FONT_30_BOLD, text_anchor)
+
+
+def draw_delay(
+    departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: int, col_width: int, text_color: tuple[int, int, int]
+):
+    text = f"{departure.delay_minutes_str}"
+    text_anchor = "rm"
+    padding_right = 0
+    text_x = x + col_width - padding_right
+    text_y = get_vertical_center(y, ROW_HEIGHT)
+    draw.text((text_x, text_y), text, text_color, FONT_20_BOLD, text_anchor)
 
 
 def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
@@ -133,12 +140,21 @@ def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
             # grid outline for testing:
             # draw.rectangle([(x, y), (x + col_width - 1, y + ROW_HEIGHT - 1)], outline="red")
 
+            if departure.delay_minutes > 0:
+                delay_color = LATE_RED
+            elif departure.delay_minutes < 0:
+                delay_color = EARLY_YELLOW
+            else:
+                delay_color = WHITE
+
             if col == 0:
                 draw_line_info(departure, draw, x, y, col_width)
             elif col == 1:
                 draw_destination(departure, draw, x, y, col_width)
-            elif col == 2:
-                draw_depart_time(departure, draw, x, y, col_width)
+            elif col == 2 and departure.delay_minutes != 0:
+                draw_delay(departure, draw, x, y, col_width, delay_color)
+            elif col == 3:
+                draw_depart_time(departure, draw, x, y, col_width, delay_color)
 
 
 def draw_clock(draw: ImageDraw.ImageDraw):
@@ -159,7 +175,6 @@ def draw_date(draw: ImageDraw.ImageDraw):
     date_str = now.strftime("%d.%m.%Y")
 
     text_anchor = "ma"
-    box_height = ROW_HEIGHT
     x = 360
     y = ROW_HEIGHT * 2
 
