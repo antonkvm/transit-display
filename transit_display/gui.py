@@ -114,8 +114,8 @@ def draw_depart_time(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y:
 
 
 def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
-    # leave 2 rows at the top for clock an weather:
-    for row in range(2, NUM_ROWS):
+    # leave 3 rows at the top for clock and weather:
+    for row in range(3, NUM_ROWS):
         y = row * ROW_HEIGHT
 
         if row % 2 == 0:
@@ -152,6 +152,18 @@ def draw_clock(draw: ImageDraw.ImageDraw):
     y = get_vertical_center(top_y=0, box_height=box_height)
 
     draw.text((x, y), time_str, "white", FONT_80, text_anchor)
+
+
+def draw_date(draw: ImageDraw.ImageDraw):
+    now = datetime.now()
+    date_str = now.strftime("%d.%m.%Y")
+
+    text_anchor = "ma"
+    box_height = ROW_HEIGHT
+    x = 360
+    y = ROW_HEIGHT * 2
+
+    draw.text((x, y), date_str, "white", FONT_20, text_anchor)
 
 
 def draw_weather_info(draw: ImageDraw.ImageDraw, weather: WeatherData | None):
@@ -192,6 +204,7 @@ def draw_gui(departures: list[Departure], weather: WeatherData | None) -> Image.
     image = Image.new("RGB", (720, 720), "black")
     draw = ImageDraw.Draw(image)
     draw_clock(draw)
+    draw_date(draw)
     draw_weather_info(draw, weather)
     draw_trip_list(draw, departures)
     return image
