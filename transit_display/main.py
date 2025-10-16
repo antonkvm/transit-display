@@ -6,7 +6,6 @@ import time
 import transit_display.gui as gui
 from transit_display.trip_fetcher import trip_fetch_loop
 from transit_display.weather_fetcher import weather_fetch_loop
-from transit_display.wifi_checker import wifi_check_loop
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,6 @@ def main_loop():
     threading.Thread(
         target=weather_fetch_loop, name="WeatherThread", args=[weather, weather_lock, update_event], daemon=True
     ).start()
-    threading.Thread(target=wifi_check_loop, name="WifiCheckThread", daemon=True).start()
 
     while True:
         update_event.wait(timeout=15.0)
