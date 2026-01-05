@@ -44,9 +44,9 @@ class Departure:
         product: str = json["line"]["product"]
 
         if line == "S41":
-            destination = "\u21ba " + destination
-        elif line == "S42":
             destination = "\u21bb " + destination
+        elif line == "S42":
+            destination = "\u21ba " + destination
 
         destination = destination.replace("(Berlin)", "").strip()
 
