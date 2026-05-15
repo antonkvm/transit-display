@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 NUM_ROWS, ROW_HEIGHT = 18, 40  # these need to multiply to 720
 COL_WIDTHS = [80, 460, 80, 100]  # these need to add up to 720
-TOP_OFFSET_COLS = 3  # number of cols cleared at top of screen for clock/weather
+TOP_OFFSET_COLS = 6  # number of cols cleared at top of screen for clock/weather
 FRAMEBUFFER = Path("/dev/fb0")
 
 FONT_STYLE = str(Path(__file__).absolute().parent / "assets/DejaVuSans.ttf")
@@ -127,9 +127,6 @@ def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
         for col, col_width in enumerate(COL_WIDTHS):
             x = sum(COL_WIDTHS[:col])
 
-            # grid outline for testing:
-            # draw.rectangle([(x, y), (x + col_width - 1, y + ROW_HEIGHT - 1)], outline="red")
-
             if departure.delay_minutes > 0:
                 delay_color = LATE_RED
             elif departure.delay_minutes < 0:
@@ -152,23 +149,22 @@ def draw_clock(draw: ImageDraw.ImageDraw):
     # date_str = now.strftime("%a, %d. %b %Y")
     time_str = now.strftime("%H:%M")
 
-    text_anchor = "mm"
-    box_height = ROW_HEIGHT * 2
-    x = 360
-    y = get_vertical_center(top_y=0, box_height=box_height)
+    text_anchor = "la"
+    x = 10
+    y = ROW_HEIGHT
 
-    draw.text((x, y), time_str, "white", FONT_80, text_anchor)
+    draw.text((x, y), time_str, "white", font(160), text_anchor)
 
 
 def draw_date(draw: ImageDraw.ImageDraw):
     now = datetime.now()
-    date_str = now.strftime("%d.%m.%Y")
+    date_str = now.strftime("%A, %d.%m.%Y")
 
-    text_anchor = "ma"
-    x = 360
-    y = ROW_HEIGHT * 2
+    text_anchor = "la"
+    x = 20
+    y = 20
 
-    draw.text((x, y), date_str, "white", FONT_30, text_anchor)
+    draw.text((x, y), date_str, "white", font(35), text_anchor)
 
 
 def draw_weather_info(draw: ImageDraw.ImageDraw, weather: WeatherData | None):
@@ -183,12 +179,12 @@ def draw_temperature_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
     temp = f"{weather.temperature}°"
     min_max = f"\u2191{weather.temperature_daily_max}° \u2193{weather.temperature_daily_min}°"
 
-    margin_left = 10
-    main_xy = (0 + margin_left, get_vertical_center(0, ROW_HEIGHT))
-    subt_xy = (0 + margin_left, ROW_HEIGHT)
+    margin_right = 10
+    main_xy = (720 - margin_right, 0)
+    subt_xy = (720 - margin_right, 70)
 
-    draw.text(main_xy, temp, "white", FONT_30_BOLD, "lm")
-    draw.text(subt_xy, min_max, "lightgrey", FONT_20_BOLD, "la")
+    draw.text(main_xy, temp, "white", font(60, bold=True), "ra")
+    draw.text(subt_xy, min_max, "lightgrey", font(30, bold=True), "ra")
 
 
 def draw_uv_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
@@ -198,11 +194,11 @@ def draw_uv_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
     uv_max_str = f"\u2191{uv_max}"
 
     margin_right = 10
-    main_xy = (720 - margin_right, get_vertical_center(0, ROW_HEIGHT))
-    subt_xy = (720 - margin_right, ROW_HEIGHT)
+    main_xy = (720 - margin_right, ROW_HEIGHT * 3)
+    subt_xy = (720 - margin_right, ROW_HEIGHT * 3 + 70)
 
-    draw.text(main_xy, uv_now_str, "white", FONT_30_BOLD, "rm")
-    draw.text(subt_xy, uv_max_str, "lightgrey", FONT_20_BOLD, "ra")
+    draw.text(main_xy, uv_now_str, "white", font(60, bold=True), "ra")
+    draw.text(subt_xy, uv_max_str, "lightgrey", font(30, bold=True), "ra")
 
 
 def draw_gui(departures: list[Departure], weather: WeatherData | None) -> Image.Image:
@@ -212,7 +208,16 @@ def draw_gui(departures: list[Departure], weather: WeatherData | None) -> Image.
     draw_date(draw)
     draw_weather_info(draw, weather)
     draw_trip_list(draw, departures)
+    # draw_grid_outline_for_testing(draw)
     return image
+
+
+def draw_grid_outline_for_testing(draw):
+    for row in range(0, NUM_ROWS):
+        y = row * ROW_HEIGHT
+        for col, col_width in enumerate(COL_WIDTHS):
+            x = sum(COL_WIDTHS[:col])
+            draw.rectangle([(x, y), (x + col_width - 1, y + ROW_HEIGHT - 1)], outline="red")
 
 
 def write_rgb_to_frame_buffer(rgb_image: Image.Image):
