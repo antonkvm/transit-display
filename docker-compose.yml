@@ -6,3 +6,5 @@ services:
     image: transit-display
     container_name: transit-display
     restart: unless-stopped
+    volumes:
+      - /dev/fb0:/dev/fb0:rw  # framebuffer
