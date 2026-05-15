@@ -18,16 +18,6 @@ FRAMEBUFFER = Path("/dev/fb0")
 FONT_STYLE = str(Path(__file__).absolute().parent / "assets/DejaVuSans.ttf")
 FONT_STYLE_BOLD = str(Path(__file__).absolute().parent / "assets/DejaVuSansCondensed-Bold.ttf")
 
-FONT_20 = ImageFont.truetype(FONT_STYLE, 20)
-FONT_30 = ImageFont.truetype(FONT_STYLE, 30)
-FONT_50 = ImageFont.truetype(FONT_STYLE, 50)
-FONT_80 = ImageFont.truetype(FONT_STYLE, 80)
-FONT_16_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 16)
-FONT_20_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 20)
-FONT_30_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 30)
-FONT_50_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 50)
-FONT_80_BOLD = ImageFont.truetype(FONT_STYLE_BOLD, 80)
-
 SBAHN_GREEN = (0, 119, 52)
 METROBUS_YELLOW = (233, 208, 33)
 BUS_PURPLE = (160, 1, 121)
@@ -66,7 +56,7 @@ def draw_line_info(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: i
     text_x = get_horizontal_center(x, col_width) + 1
     text_y = get_vertical_center(y, ROW_HEIGHT) + 1
 
-    draw.text((text_x, text_y), departure.line, text_color, FONT_30_BOLD, text_anchor)
+    draw.text((text_x, text_y), departure.line, text_color, font(30, bold=True), text_anchor)
 
 
 def truncate_text(text: str, font: ImageFont.FreeTypeFont, draw: ImageDraw.ImageDraw, max_width: int) -> str:
@@ -93,9 +83,9 @@ def draw_destination(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y:
     text_x = x + padding_left
     text_y = get_vertical_center(y, ROW_HEIGHT)
 
-    text = truncate_text(text, FONT_30, draw, col_width - padding_left)
+    text = truncate_text(text, font(30), draw, col_width - padding_left)
 
-    draw.text((text_x, text_y), text, "white", FONT_30, text_anchor)
+    draw.text((text_x, text_y), text, "white", font(30), text_anchor)
 
 
 def draw_depart_time(
@@ -107,7 +97,7 @@ def draw_depart_time(
     text_x = x + col_width - padding_right
     text_y = get_vertical_center(y, ROW_HEIGHT)
 
-    draw.text((text_x, text_y), text, text_color, FONT_30_BOLD, text_anchor)
+    draw.text((text_x, text_y), text, text_color, font(30, bold=True), text_anchor)
 
 
 def draw_delay(
@@ -118,7 +108,7 @@ def draw_delay(
     padding_right = 0
     text_x = x + col_width - padding_right
     text_y = get_vertical_center(y, ROW_HEIGHT)
-    draw.text((text_x, text_y), text, text_color, FONT_20_BOLD, text_anchor)
+    draw.text((text_x, text_y), text, text_color, font(20, bold=True), text_anchor)
 
 
 def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
@@ -251,6 +241,10 @@ def death_screen(error: str):
     screen = Image.new("RGB", (720, 720), "black")
     draw = ImageDraw.Draw(screen)
     text_anchor = "mm"
-    draw.text((360, 200), text, "red", FONT_50, text_anchor)
-    draw.multiline_text((10, 300), error, "red", FONT_50, "la", spacing=2)
+    draw.text((360, 200), text, "red", font(50), text_anchor)
+    draw.multiline_text((10, 300), error, "red", font(50), "la", spacing=2)
     write_rgb_to_frame_buffer(screen)
+
+
+def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
+    return ImageFont.truetype(font=FONT_STYLE_BOLD if bold else FONT_STYLE, size=size)
