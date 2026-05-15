@@ -44,7 +44,7 @@ def main_loop():
         # immediately clear event flag, so updates triggered during render are 'queued' for the next loop:
         update_event.clear()
 
-        # only need a shallow copie bc underlying data is immutable (frozen dataclass)
+        # only need a shallow copy bc underlying data is immutable (frozen dataclass)
         with dep_lock:
             departures_copy = departures.copy()
         with weather_lock:
