@@ -1,11 +1,11 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from transit_display.trip_fetcher import Departure, fetch_departures_for_all_stations_concurrently
+from transit_display.trip_fetcher import Departure
 from transit_display.weather_fetcher import WeatherData, get_weather
 
 logger = logging.getLogger(__name__)
@@ -235,7 +235,22 @@ def write_rgb_to_frame_buffer(rgb_image: Image.Image):
 
 
 def show_gui_snapshot_window():
-    departures = fetch_departures_for_all_stations_concurrently()
+    # departures = fetch_departures_for_all_stations_concurrently()
+    logger.info("Assuming this is a test environemnt, using dummy departure list.")
+    departures = [
+        Departure("1", "S41", "↻ S Beusselstr.", datetime.now() + timedelta(minutes=0), 60, 1, "+1", "suburban"),
+        Departure("2", "S42", "↺ S Beusselstr.", datetime.now() + timedelta(minutes=1), 0, 0, "0", "suburban"),
+        Departure("3", "M45", "Hertzallee", datetime.now() + timedelta(minutes=2), 0, 0, "0", "bus"),
+        Departure("4", "M45", "Johannesstift", datetime.now() + timedelta(minutes=3), 0, 0, "0", "bus"),
+        Departure("5", "S41", "↻ S Greifswalder Str.", datetime.now() + timedelta(minutes=4), 0, 0, "0", "suburban"),
+        Departure("6", "S42", "↺ S Südkreuz Bhf", datetime.now() + timedelta(minutes=5), 0, 0, "0", "suburban"),
+        Departure("7", "309", "U Wilmersdorfer Str.", datetime.now() + timedelta(minutes=6), -60, -1, "-1", "bus"),
+        Departure("8", "S41", "↻ S Beusselstr.", datetime.now() + timedelta(minutes=7), 0, 0, "0", "suburban"),
+        Departure("9", "M45", "Johannesstift", datetime.now() + timedelta(minutes=8), 0, 0, "0", "bus"),
+        Departure("10", "139", "Eschenweg", datetime.now() + timedelta(minutes=9), 0, 0, "0", "bus"),
+        Departure("11", "S42", "Meppen11", datetime.now() + timedelta(minutes=10), 0, 0, "0", "suburban"),
+        Departure("12", "139", "Schlosspark-Klinik", datetime.now() + timedelta(minutes=11), 0, 0, "0", "bus"),
+    ]
     weather = get_weather()
     img = draw_gui(departures, weather)
     img.show()
