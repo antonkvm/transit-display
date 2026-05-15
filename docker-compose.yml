@@ -1,0 +1,7 @@
+services:
+  transit-display:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: transit-display
+    container_name: transit-display
