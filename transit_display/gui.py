@@ -115,6 +115,7 @@ def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
     for row in range(TOP_OFFSET_COLS, NUM_ROWS):
         y = row * ROW_HEIGHT
 
+        # zebra print background for lines:
         if row % 2 == 0:
             draw.rectangle(((0, y), (720, y + ROW_HEIGHT)), (25, 25, 25))
 
