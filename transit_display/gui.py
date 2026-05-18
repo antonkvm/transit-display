@@ -85,7 +85,7 @@ def draw_destination(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y:
 
     text = truncate_text(text, font(30), draw, col_width - padding_left)
 
-    draw.text((text_x, text_y), text, "white", font(30), text_anchor)
+    draw.text((text_x, text_y), text, "lightgrey", font(30), text_anchor)
 
 
 def draw_depart_time(
@@ -236,7 +236,7 @@ def write_rgb_to_frame_buffer(rgb_image: Image.Image):
 
 def show_gui_snapshot_window():
     # departures = fetch_departures_for_all_stations_concurrently()
-    logger.info("Assuming this is a test environemnt, using dummy departure list.")
+    logger.info("Assuming this is a test environemnt, using dummy departure list and creating a single snapshot.")
     departures = [
         Departure("1", "S41", "↻ S Beusselstr.", datetime.now() + timedelta(minutes=0), 60, 1, "+1", "suburban"),
         Departure("2", "S42", "↺ S Beusselstr.", datetime.now() + timedelta(minutes=1), 0, 0, "0", "suburban"),
