@@ -150,22 +150,22 @@ def draw_clock(draw: ImageDraw.ImageDraw):
     # date_str = now.strftime("%a, %d. %b %Y")
     time_str = now.strftime("%H:%M")
 
-    text_anchor = "la"
+    text_anchor = "lm"
     x = 10
-    y = ROW_HEIGHT
+    y = get_vertical_center(0, 3*ROW_HEIGHT)
 
-    draw.text((x, y), time_str, "white", font(160), text_anchor)
+    draw.text((x, y), time_str, "white", font(120, bold=True), text_anchor)
 
 
 def draw_date(draw: ImageDraw.ImageDraw):
     now = datetime.now()
-    date_str = now.strftime("%A, %d.%m.%Y")
+    date_str = now.strftime("%A %d.%m.%Y")
 
-    text_anchor = "la"
-    x = 20
-    y = 20
+    text_anchor = "ra"
+    x = 720 - 10
+    y = 10
 
-    draw.text((x, y), date_str, "white", font(35), text_anchor)
+    draw.text((x, y), date_str, "white", font(30), text_anchor)
 
 
 def draw_weather_info(draw: ImageDraw.ImageDraw, weather: WeatherData | None):
@@ -177,15 +177,22 @@ def draw_weather_info(draw: ImageDraw.ImageDraw, weather: WeatherData | None):
 
 
 def draw_temperature_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
-    temp = f"{weather.temperature}°"
-    min_max = f"\u2191{weather.temperature_daily_max}° \u2193{weather.temperature_daily_min}°"
+    temp_str = f"{weather.temperature}°"
+    min_max_str = f"\u2191{weather.temperature_daily_max}°\n\u2193{weather.temperature_daily_min}°"
 
-    margin_right = 10
-    main_xy = (720 - margin_right, 0)
-    subt_xy = (720 - margin_right, 70)
+    main_font = font(80, bold=False)
+    main_x = 10
+    main_y = get_vertical_center(top_y=3*ROW_HEIGHT, offset_downwards=3*ROW_HEIGHT)
+    main_xy = (main_x, main_y)
+    main_width = draw.textlength(temp_str, main_font)
+    
+    subtitle_font = font(30, bold=False)
+    subtitle_x = main_x + main_width + 10
+    subtitle_y = get_vertical_center(top_y=3*ROW_HEIGHT, offset_downwards=3*ROW_HEIGHT)
+    subt_xy = (subtitle_x, subtitle_y)
 
-    draw.text(main_xy, temp, "white", font(60, bold=True), "ra")
-    draw.text(subt_xy, min_max, "lightgrey", font(30, bold=True), "ra")
+    draw.text(main_xy, temp_str, "white", main_font, "lm")
+    draw.text(subt_xy, min_max_str, "lightgrey", subtitle_font, "lm")
 
 
 def draw_uv_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
@@ -194,12 +201,21 @@ def draw_uv_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
     uv_now_str = f"\u2600{uv_now}"
     uv_max_str = f"\u2191{uv_max}"
 
-    margin_right = 10
-    main_xy = (720 - margin_right, ROW_HEIGHT * 3)
-    subt_xy = (720 - margin_right, ROW_HEIGHT * 3 + 70)
-
-    draw.text(main_xy, uv_now_str, "white", font(60, bold=True), "ra")
-    draw.text(subt_xy, uv_max_str, "lightgrey", font(30, bold=True), "ra")
+    subtitle_font = font(30, bold=False)
+    subtitle_anchor = "rd"
+    subtitle_x = 720 - 10
+    subtitle_y = get_vertical_center(top_y=3*ROW_HEIGHT, offset_downwards=3*ROW_HEIGHT)
+    subtitle_xy = (subtitle_x, subtitle_y)
+    subtitle_width = draw.textlength(uv_max_str, subtitle_font)
+    
+    main_font = font(80, bold=False)
+    main_anchor = "rm"
+    main_x = 720 - 10 - subtitle_width
+    main_y = get_vertical_center(top_y=3*ROW_HEIGHT, offset_downwards=3*ROW_HEIGHT)
+    main_xy = (main_x, main_y)
+    
+    draw.text(main_xy, uv_now_str, "white", main_font, main_anchor)
+    draw.text(subtitle_xy, uv_max_str, "lightgrey", subtitle_font, subtitle_anchor)
 
 
 def draw_gui(departures: list[Departure], weather: WeatherData | None) -> Image.Image:
@@ -209,6 +225,7 @@ def draw_gui(departures: list[Departure], weather: WeatherData | None) -> Image.
     draw_date(draw)
     draw_weather_info(draw, weather)
     draw_trip_list(draw, departures)
+    draw.line([(0, 3*ROW_HEIGHT), (720, 3*ROW_HEIGHT)], "grey", 1)
     # draw_grid_outline_for_testing(draw)
     return image
 
