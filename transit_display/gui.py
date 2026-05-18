@@ -67,12 +67,12 @@ def truncate_text(text: str, font: ImageFont.FreeTypeFont, draw: ImageDraw.Image
     return text + "..."
 
 
-def get_horizontal_center(left_x: int, box_width: int):
-    return left_x + box_width // 2
+def get_horizontal_center(left_x: int, offset_to_right: int):
+    return left_x + offset_to_right // 2
 
 
-def get_vertical_center(top_y: int, box_height: int) -> int:
-    return top_y + box_height // 2
+def get_vertical_center(top_y: int, offset_downwards: int) -> int:
+    return top_y + offset_downwards // 2
 
 
 def draw_destination(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: int, col_width: int):
