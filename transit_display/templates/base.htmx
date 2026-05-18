@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transit Display Configuration</title>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <h1>Transit Display Configuration</h1>
+    <button hx-get="/weather" hx-target="#content" hx-swap="innerHTML">Weather config</button>
+    <button hx-get="/transit" hx-target="#content" hx-swap="innerHTML">Transfit config</button>
+    <p id="content">Select a tab</p>
+</body>
+</html>

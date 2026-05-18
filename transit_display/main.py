@@ -3,7 +3,10 @@ import logging
 import threading
 import time
 
+import uvicorn
+
 import transit_display.gui as gui
+from transit_display.db_handler import init_database
 from transit_display.trip_fetcher import trip_fetch_loop
 from transit_display.weather_fetcher import weather_fetch_loop
 
@@ -20,8 +23,14 @@ def clock_loop(event: threading.Event):
         previous_minute = new_minute
         time.sleep(1)
 
+def config_server_thread():
+    # TODO: figure out how to fire update event on database update
+    uvicorn.run("transit_display.config_server:app", host="0.0.0.0", port=80)
 
-def main_loop():
+
+def main_loop(with_gui: bool):
+    init_database()
+    
     update_event = threading.Event()
     update_event.set()  # initialize flag as True to allow first GUI render
 
@@ -30,6 +39,7 @@ def main_loop():
     weather = {"data": None}  # dicts allow in-place mutation of values from threads and avoids local rebinding
     weather_lock = threading.Lock()
 
+    threading.Thread(name="ConfigServerThread", target=config_server_thread, daemon=True).start()
     threading.Thread(
         target=trip_fetch_loop, name="TripFetchThread", args=[departures, dep_lock, update_event], daemon=True
     ).start()
@@ -51,21 +61,33 @@ def main_loop():
             weather_copy = weather["data"]
 
         screen_img = gui.draw_gui(departures_copy, weather_copy)
-        gui.write_rgb_to_frame_buffer(screen_img)
+        if with_gui:
+            gui.write_rgb_to_frame_buffer(screen_img)
+        else:
+            # serve gui snapshot in webserver
+            pass
 
 
 def run():
-    if not gui.FRAMEBUFFER.exists():
-        logger.info(f"No framebuffer {gui.FRAMEBUFFER} detected, showing snapshot in viewer")
-        gui.show_gui_snapshot_window()
+    if gui.FRAMEBUFFER.exists():
+        logger.info(f"Framebuffer {gui.FRAMEBUFFER} found, starting main loop with GUI.")
+        main_loop(with_gui=True)
     else:
-        logger.info(f"Framebuffer {gui.FRAMEBUFFER} found, Starting GUI loop")
-        try:
-            main_loop()
-        except Exception as e:
-            logger.exception("GUI loop failed.")
-            gui.death_screen(str(e))
-            raise
+        logger.info(f"No framebuffer {gui.FRAMEBUFFER} found, starting main loop without GUI")
+        main_loop(with_gui=False)
+
+    
+    # if not gui.FRAMEBUFFER.exists():
+    #     logger.info(f"No framebuffer {gui.FRAMEBUFFER} detected, showing snapshot in viewer")
+    #     gui.show_gui_snapshot_window()
+    # else:
+    #     logger.info(f"Framebuffer {gui.FRAMEBUFFER} found, Starting GUI loop")
+    #     try:
+    #         main_loop()
+    #     except Exception as e:
+    #         logger.exception("GUI loop failed.")
+    #         gui.death_screen(str(e))
+    #         raise
 
 
 if __name__ == "__main__":

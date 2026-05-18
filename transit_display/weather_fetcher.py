@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 
 import requests
 
+from transit_display.db_handler import get_weather_coords
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,9 +24,10 @@ class WeatherData:
 # ? put coordinates in yaml?
 def get_weather() -> WeatherData:
     url = "https://api.open-meteo.com/v1/forecast"
+    coords = get_weather_coords()
     params = {
-        "latitude": 52.51356805426098,
-        "longitude": 13.32652568167527,
+        "latitude": coords["lat"],
+        "longitude": coords["lon"],
         "timezone": "Europe/Berlin",
         "current": ["temperature_2m", "uv_index"],
         "daily": ["temperature_2m_min", "temperature_2m_max", "uv_index_max"],

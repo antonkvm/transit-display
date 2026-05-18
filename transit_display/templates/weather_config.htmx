@@ -1,0 +1,43 @@
+<h2>Weather config</h2>
+
+<h3>Currently saved location:</h3>
+<div id="current_coords" hx-get="/weather/get_coords" hx-trigger="load, weatherUpdated from:body" hx-swap="innerHTML">
+    <table>
+        <tr>
+            <td>Name:</td>
+            <td>loading...</td>
+        </tr>
+        <tr>
+            <td>Latitude:</td>
+            <td>loading...</td>
+        </tr>
+        <tr>
+            <td>Latitude:</td>
+            <td>loading...</td>
+        </tr>
+    </table>
+</div>
+<h3>Save new location:</h3>
+<form hx-post="/weather/set_coords" hx-target="#result" hx-swap="innerHTML">
+    <table>
+        <tr>
+            <td>Name:</td>
+            <td><input name="name" type="text" placeholder="e.g. Berlin"></td>
+        </tr>
+        <tr>
+            <!-- need to verify that input is valid float -->
+            <td>Latitude:</td>
+            <td><input name="lat" type="number" step="any" required></td>
+        </tr>
+        <tr>
+            <td>Longitude:</td>
+            <td><input name="lon" type="number" step="any" required></td>
+        </tr>
+    </table>
+    <input type="submit" value="Submit">
+</form>
+<p id="result"></p>
+
+<!-- The submit button should send to database and trigger and update on the currently saved location table -->
+
+<p>Tip: use <a href="https://www.latlong.net/" target="_blank">latlong.net</a> to find your coordinates.</p>
