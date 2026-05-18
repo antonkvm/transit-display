@@ -42,6 +42,8 @@ def set_weather_coords(name: Annotated[str, Form()], lat: Annotated[float, Form(
 @app.get("/weather/get_coords", response_class=HTMLResponse)
 def get_weather_coords():
     weather_coords = db_handler.get_weather_coords()
+    if weather_coords is None:
+        weather_coords = {"name": "not set", "lat": "not set", "lon": "not set"}
     return f"""
     <table>
         <tr>

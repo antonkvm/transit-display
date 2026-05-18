@@ -35,7 +35,7 @@ def insert_weather_coords(name: str, lat: float, lon: float):
     conn.commit()
     conn.close()
     
-def get_weather_coords() -> dict[str, str|int]:
+def get_weather_coords() -> dict[str, str|int] | None:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -45,8 +45,11 @@ def get_weather_coords() -> dict[str, str|int]:
     FROM weather_config
     WHERE id = 1
     """).fetchone()
-
-    return {**row}
+        
+    if row is None:
+        return None
+    else:
+        return {**row}
     
     
 if __name__ == "__main__":

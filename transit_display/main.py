@@ -25,6 +25,7 @@ def clock_loop(event: threading.Event):
 
 def config_server_thread():
     # TODO: figure out how to fire update event on database update
+    # currently takes until next weather refresh (every 15 mins) to update screen
     uvicorn.run("transit_display.config_server:app", host="0.0.0.0", port=80)
 
 

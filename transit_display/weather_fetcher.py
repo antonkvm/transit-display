@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 import requests
 
-from transit_display.db_handler import get_weather_coords
+from transit_display import db_handler
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,9 @@ class WeatherData:
 # ? put coordinates in yaml?
 def get_weather() -> WeatherData:
     url = "https://api.open-meteo.com/v1/forecast"
-    coords = get_weather_coords()
+    coords = db_handler.get_weather_coords()
+    if coords is None:
+        # TODO: handle empty weather on first startup
     params = {
         "latitude": coords["lat"],
         "longitude": coords["lon"],
