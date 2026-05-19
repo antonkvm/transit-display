@@ -25,6 +25,9 @@ LATE_RED = (255, 0, 0)
 EARLY_YELLOW = (255, 255, 0)
 WHITE = (255, 255, 255)
 
+GUI_PNG_SAVE_PATH = Path(__file__).resolve().parent / "gui.png"
+
+
 
 def draw_line_info(departure: Departure, draw: ImageDraw.ImageDraw, x: int, y: int, col_width: int):
     # subtract 1 pixel from the bottom right boundary bc pixel indices start at 0
@@ -272,6 +275,10 @@ def show_gui_snapshot_window():
     weather = get_weather()
     img = draw_gui(departures, weather)
     img.show()
+
+
+def save_gui_as_png(gui: Image.Image):
+    gui.save(GUI_PNG_SAVE_PATH, format="PNG")
 
 
 def death_screen(error: str):

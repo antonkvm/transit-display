@@ -2,15 +2,17 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 import transit_display.db_handler as db_handler
+import transit_display.gui as gui
 
 app = FastAPI()
 
 WORKING_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=WORKING_DIR / "templates/")
+
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
@@ -61,8 +63,7 @@ def get_weather_coords():
     </table>
     """
 
-@app.get("/gui", response_class=HTMLResponse)
+
+@app.get("/gui", response_class=FileResponse)
 def show_gui():
-    # draw gui image and return as png
-    # gui_img = draw_gui()
-    pass
+    return FileResponse(gui.GUI_PNG_SAVE_PATH)

@@ -29,7 +29,7 @@ def config_server_thread():
     uvicorn.run("transit_display.config_server:app", host="0.0.0.0", port=80)
 
 
-def main_loop(with_gui: bool):
+def main_loop(render_screen: bool):
     init_database()
     
     update_event = threading.Event()
@@ -62,20 +62,18 @@ def main_loop(with_gui: bool):
             weather_copy = weather["data"]
 
         screen_img = gui.draw_gui(departures_copy, weather_copy)
-        if with_gui:
+        if render_screen:
             gui.write_rgb_to_frame_buffer(screen_img)
-        else:
-            # serve gui snapshot in webserver
-            pass
+        gui.save_gui_as_png(screen_img)
 
 
 def run():
     if gui.FRAMEBUFFER.exists():
         logger.info(f"Framebuffer {gui.FRAMEBUFFER} found, starting main loop with GUI.")
-        main_loop(with_gui=True)
+        main_loop(render_screen=True)
     else:
         logger.info(f"No framebuffer {gui.FRAMEBUFFER} found, starting main loop without GUI")
-        main_loop(with_gui=False)
+        main_loop(render_screen=False)
 
     
     # if not gui.FRAMEBUFFER.exists():
