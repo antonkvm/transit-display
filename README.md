@@ -14,55 +14,57 @@ Displays live public transit departures and current weather info on a small kios
 
 ## Setup
 
-### Your stations
+1. Pull the repo
+2. Edit `stations.yaml` with the stations for which you want to see the next departures. The `fetch_products` field specifies what types of transport from that station you are interested in seeing departures for. Possible values are: "suburban", "subway", "tram", "bus", "ferry", "express", "regional". You can find the stationID of your stations using the [BVG OpenAPI Playground](https://petstore.swagger.io/?url=https%3A%2F%2Fv6.bvg.transport.rest%2F.well-known%2Fservice-desc%0A). Use the `/locations` endpoint with a keyword query like "Hauptbahnhof", and copy the ID from the response JSON.
+3. Create a virtual environment and activate it:
 
-Edit `stations.yaml` with the stations for which you want to see the next departures. The `fetch_products` field specifies what types of transport from that station you are interested in seeing departures for. Possible values are: "suburban", "subway", "tram", "bus", "ferry", "express", "regional".
+    ~~~bash
+    cd transit-display
+    python -m venv venv
+    source venv/bin/activate
+    ~~~
 
-You can find the stationID of your stations using the [BVG OpenAPI Playground](https://petstore.swagger.io/?url=https%3A%2F%2Fv6.bvg.transport.rest%2F.well-known%2Fservice-desc%0A). Use the `/locations` endpoint with a keyword query like "Hauptbahnhof", and copy the ID from the response JSON.
+4. Install the requirements:
 
-### Requirements
+    ~~~bash
+    pip install -r requirements.txt
+    ~~~
 
-Install the requirements in the `requirements.txt`.
+    If you run into issues where the packages cannot be fetched, try this:
 
-If using pip, you can just run
+    ~~~bash
+    pip install --upgrade pip
+    pip install -r requirements.txt --no-cache-dir --index-url https://pypi.org/simple
+    ~~~~
 
-~~~bash
-cd transit-display/
-pip install -r requirements.txt
-~~~
+    Some systems, like the headless Raspberry Pi OS, don't have pip installed. In that case, the easiest way to install the packages is
 
-Some systems, like the headless Raspberry Pi OS, don't have pip installed. In that case, the easiest way to install the packages is
+    ~~~bash
+    sudo apt update
+    sudo apt install python3-requests python3-yaml python3-numpy python3-pillow
+    ~~~
 
-~~~bash
-sudo apt update
-sudo apt install python3-requests python3-yaml python3-numpy python3-pillow
-~~~
+5. Now access `http://<yourhost>/` (on port 80) to set your location for weather data. I want to add a UI for setting up your stations as well, at some point.
 
 ## Usage
 
-### Print departures to terminal
-
-You can run trip_fetcher.py as a simple script to output the next departures as a table in the terminal.
-
-~~~bash
-cd transit-display
-python transit_display/trip_fetcher.py
-~~~
-
 ### Run GUI
 
-To run the GUI, run the app as a Python module:
+To run the GUI, run the app as a Python module. Make sure the virtual environemnt is active:
 
 ~~~bash
 cd transit-display/
+source venv/bin/activate
 python -m transit_display.main
 ~~~
 
 If you have a framebuffer available at `/dev/fb0`, the GUI loop will launch and display on screen.
 
-If you don't have that framebuffer available, a static snapshot of the GUI will open in a preview window.
+If you don't have that framebuffer available, you can access a snapshot at `http://<yourhost>/gui`.
 
 ### Run as a service
+
+Todo: add venv actication to execstart of service file.
 
 To have the app run on startup and restart it on exit, you can add it as a systemd service using the `transit-display.service` file.
 
