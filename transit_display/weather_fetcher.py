@@ -21,12 +21,12 @@ class WeatherData:
     uv_index_daily_max: float
 
 
-# ? put coordinates in yaml?
-def get_weather() -> WeatherData:
+def get_weather() -> WeatherData | None:
     url = "https://api.open-meteo.com/v1/forecast"
     coords = db_handler.get_weather_coords()
+    # edge case: no coordinates set in database, like before first setup
     if coords is None:
-        # TODO: handle empty weather on first startup
+        return None
     params = {
         "latitude": coords["lat"],
         "longitude": coords["lon"],
@@ -63,13 +63,20 @@ def fetch_weather_until_success():
             time.sleep(retry_delay_seconds)
 
 
-def weather_fetch_loop(shared_weather: dict[str, WeatherData], lock: threading.Lock, event: threading.Event):
+def weather_fetch_loop(shared_weather: dict[str, WeatherData | None], lock: threading.Lock, event: threading.Event):
     """Continuously fetches and updates weather data at full quarter-hour intervals based on server timestamps."""
     interval_minutes = 15
     offset_minutes = 1  # give server a minute to update its data before fetching
 
     while True:
         weather = fetch_weather_until_success()
+        if not weather:
+            wait_seconds = 10
+            time.sleep(wait_seconds)
+            logger.warning(
+                f"No coordinates in database for fetching weather! Checking again in {wait_seconds} seconds..."
+            )
+            continue
 
         with lock:
             shared_weather["data"] = weather
@@ -97,5 +104,8 @@ def weather_fetch_loop(shared_weather: dict[str, WeatherData], lock: threading.L
 
 if __name__ == "__main__":
     weather = get_weather()
-    for field in fields(weather):
-        print(field.name, getattr(weather, field.name), sep=": ")
+    if not weather:
+        print("No weather coordinates in databse, probably :(")
+    else:
+        for field in fields(weather):
+            print(field.name, getattr(weather, field.name), sep=": ")
