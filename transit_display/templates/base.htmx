@@ -10,6 +10,7 @@
     <h1>Transit Display Configuration</h1>
     <button hx-get="/weather" hx-target="#content" hx-swap="innerHTML">Weather config</button>
     <button hx-get="/transit" hx-target="#content" hx-swap="innerHTML">Transfit config</button>
+    <button><a href="/gui" target="_blank" style="text-decoration: none; color: unset;">Open GUI in new tab</a></button>
     <p id="content">Select a tab</p>
 </body>
 </html>
