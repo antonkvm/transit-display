@@ -118,6 +118,17 @@ def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
         # zebra print background for lines:
         if row % 2 == 0:
             draw.rectangle(((0, y), (720, y + ROW_HEIGHT)), (25, 25, 25))
+            
+        # display timestamp of last transit list update:
+        # todo: timestamp is set on GUI transit list update. Capturing last actual API fetch is better.
+        if row == NUM_ROWS - 1:
+            now = datetime.strftime(datetime.now(), "%d.%m.%y %H:%M")
+            text = f"Last transit update: {now}"
+            text_anchor = "lm"
+            padding_left = 10
+            text_xy = (padding_left, get_vertical_center(y, ROW_HEIGHT))
+            draw.text(text_xy, text, "lightgrey", font(30), text_anchor)
+            break
 
         try:
             departure = departures[row - TOP_OFFSET_ROWS]
