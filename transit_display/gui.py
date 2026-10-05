@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 NUM_ROWS, ROW_HEIGHT = 18, 40  # these need to multiply to 720
 COL_WIDTHS = [80, 460, 80, 100]  # these need to add up to 720
-TOP_OFFSET_COLS = 6  # number of cols cleared at top of screen for clock/weather
+TOP_OFFSET_ROWS = 6  # number of rows cleared at top of screen for clock/weather
 FRAMEBUFFER = Path("/dev/fb0")
 
 FONT_STYLE = str(Path(__file__).absolute().parent / "assets/DejaVuSans.ttf")
@@ -112,7 +112,7 @@ def draw_delay(
 
 
 def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
-    for row in range(TOP_OFFSET_COLS, NUM_ROWS):
+    for row in range(TOP_OFFSET_ROWS, NUM_ROWS):
         y = row * ROW_HEIGHT
 
         # zebra print background for lines:
@@ -120,7 +120,7 @@ def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
             draw.rectangle(((0, y), (720, y + ROW_HEIGHT)), (25, 25, 25))
 
         try:
-            departure = departures[row - TOP_OFFSET_COLS]
+            departure = departures[row - TOP_OFFSET_ROWS]
         except IndexError:
             # more rows than available departures, leave remaining rows empty
             break
