@@ -140,6 +140,7 @@ def fetch_departures(station: dict) -> list[Departure]:
     return departures
 
 
+# TODO: space out the retries more and more if it keeps failing
 def fetch_departures_retry_until_success(station: dict) -> list[Departure]:
     """Wrapper function that calls `fetch_departures` until the server responds with something useful."""
     while True:
@@ -213,7 +214,7 @@ def trip_fetch_loop(
 
             else:
                 logger.debug("Successfully fetched departures, but nothing is new.")
-            
+
             departures_last_update["last_update"] = datetime.now()
 
         time.sleep(15)

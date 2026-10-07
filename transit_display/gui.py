@@ -118,7 +118,7 @@ def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure], depar
         # zebra print background for lines:
         if row % 2 == 0:
             draw.rectangle(((0, y), (720, y + ROW_HEIGHT)), (25, 25, 25))
-            
+
         # display timestamp of last transit list update:
         if row == NUM_ROWS - 1 and departures_last_update is not None:
             now = datetime.strftime(departures_last_update, "%d.%m.%y %H:%M")
@@ -162,7 +162,7 @@ def draw_clock(draw: ImageDraw.ImageDraw):
 
     text_anchor = "lm"
     x = 10
-    y = get_vertical_center(0, 3*ROW_HEIGHT)
+    y = get_vertical_center(0, 3 * ROW_HEIGHT)
 
     draw.text((x, y), time_str, "white", font(120, bold=True), text_anchor)
 
@@ -192,13 +192,13 @@ def draw_temperature_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
 
     main_font = font(80, bold=False)
     main_x = 10
-    main_y = get_vertical_center(top_y=3*ROW_HEIGHT, offset_downwards=3*ROW_HEIGHT)
+    main_y = get_vertical_center(top_y=3 * ROW_HEIGHT, offset_downwards=3 * ROW_HEIGHT)
     main_xy = (main_x, main_y)
     main_width = draw.textlength(temp_str, main_font)
-    
+
     subtitle_font = font(30, bold=False)
     subtitle_x = main_x + main_width + 10
-    subtitle_y = get_vertical_center(top_y=3*ROW_HEIGHT, offset_downwards=3*ROW_HEIGHT)
+    subtitle_y = get_vertical_center(top_y=3 * ROW_HEIGHT, offset_downwards=3 * ROW_HEIGHT)
     subt_xy = (subtitle_x, subtitle_y)
 
     draw.text(main_xy, temp_str, "white", main_font, "lm")
@@ -214,28 +214,30 @@ def draw_uv_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
     subtitle_font = font(30, bold=False)
     subtitle_anchor = "rd"
     subtitle_x = 720 - 10
-    subtitle_y = get_vertical_center(top_y=3*ROW_HEIGHT, offset_downwards=3*ROW_HEIGHT)
+    subtitle_y = get_vertical_center(top_y=3 * ROW_HEIGHT, offset_downwards=3 * ROW_HEIGHT)
     subtitle_xy = (subtitle_x, subtitle_y)
     subtitle_width = draw.textlength(uv_max_str, subtitle_font)
-    
+
     main_font = font(80, bold=False)
     main_anchor = "rm"
     main_x = 720 - 10 - subtitle_width
-    main_y = get_vertical_center(top_y=3*ROW_HEIGHT, offset_downwards=3*ROW_HEIGHT)
+    main_y = get_vertical_center(top_y=3 * ROW_HEIGHT, offset_downwards=3 * ROW_HEIGHT)
     main_xy = (main_x, main_y)
-    
+
     draw.text(main_xy, uv_now_str, "white", main_font, main_anchor)
     draw.text(subtitle_xy, uv_max_str, "lightgrey", subtitle_font, subtitle_anchor)
 
 
-def draw_gui(departures: list[Departure], weather: WeatherData | None, departures_last_update: datetime | None) -> Image.Image:
+def draw_gui(
+    departures: list[Departure], weather: WeatherData | None, departures_last_update: datetime | None
+) -> Image.Image:
     image = Image.new("RGB", (720, 720), "black")
     draw = ImageDraw.Draw(image)
     draw_clock(draw)
     draw_date(draw)
     draw_weather_info(draw, weather)
     draw_trip_list(draw, departures, departures_last_update)
-    draw.line([(0, 3*ROW_HEIGHT), (720, 3*ROW_HEIGHT)], "grey", 1)
+    draw.line([(0, 3 * ROW_HEIGHT), (720, 3 * ROW_HEIGHT)], "grey", 1)
     # draw_grid_outline_for_testing(draw)
     return image
 
