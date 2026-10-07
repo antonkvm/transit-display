@@ -111,7 +111,7 @@ def draw_delay(
     draw.text((text_x, text_y), text, text_color, font(20, bold=True), text_anchor)
 
 
-def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
+def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure], departures_last_update: datetime | None):
     for row in range(TOP_OFFSET_ROWS, NUM_ROWS):
         y = row * ROW_HEIGHT
 
@@ -120,9 +120,8 @@ def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure]):
             draw.rectangle(((0, y), (720, y + ROW_HEIGHT)), (25, 25, 25))
             
         # display timestamp of last transit list update:
-        # todo: timestamp is set on GUI transit list update. Capturing last actual API fetch is better.
-        if row == NUM_ROWS - 1:
-            now = datetime.strftime(datetime.now(), "%d.%m.%y %H:%M")
+        if row == NUM_ROWS - 1 and departures_last_update is not None:
+            now = datetime.strftime(departures_last_update, "%d.%m.%y %H:%M")
             text = f"Last transit update: {now}"
             text_anchor = "lm"
             padding_left = 10
@@ -229,13 +228,13 @@ def draw_uv_info(draw: ImageDraw.ImageDraw, weather: WeatherData):
     draw.text(subtitle_xy, uv_max_str, "lightgrey", subtitle_font, subtitle_anchor)
 
 
-def draw_gui(departures: list[Departure], weather: WeatherData | None) -> Image.Image:
+def draw_gui(departures: list[Departure], weather: WeatherData | None, departures_last_update: datetime | None) -> Image.Image:
     image = Image.new("RGB", (720, 720), "black")
     draw = ImageDraw.Draw(image)
     draw_clock(draw)
     draw_date(draw)
     draw_weather_info(draw, weather)
-    draw_trip_list(draw, departures)
+    draw_trip_list(draw, departures, departures_last_update)
     draw.line([(0, 3*ROW_HEIGHT), (720, 3*ROW_HEIGHT)], "grey", 1)
     # draw_grid_outline_for_testing(draw)
     return image
@@ -281,7 +280,7 @@ def show_gui_snapshot_window():
         Departure("12", "139", "Schlosspark-Klinik", datetime.now() + timedelta(minutes=11), 0, 0, "0", "bus"),
     ]
     weather = get_weather()
-    img = draw_gui(departures, weather)
+    img = draw_gui(departures, weather, datetime.now())
     img.show()
 
 

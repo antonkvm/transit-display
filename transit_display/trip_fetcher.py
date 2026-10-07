@@ -182,7 +182,12 @@ def fetch_departures_for_all_stations_concurrently() -> list[Departure]:
     return departures
 
 
-def trip_fetch_loop(departures: list[Departure], dep_lock: threading.Lock, event: threading.Event):
+def trip_fetch_loop(
+    departures: list[Departure],
+    dep_lock: threading.Lock,
+    event: threading.Event,
+    departures_last_update: dict[str, datetime],
+):
     """Continuously updates the `departures` list reference in-place every 15 seconds and within the thread lock."""
     while True:
         new_departures = fetch_departures_for_all_stations_concurrently()
@@ -206,6 +211,8 @@ def trip_fetch_loop(departures: list[Departure], dep_lock: threading.Lock, event
 
             else:
                 logger.debug("Successfully fetched departures, but nothing is new.")
+            
+            departures_last_update["last_update"] = datetime.now()
 
         time.sleep(15)
 

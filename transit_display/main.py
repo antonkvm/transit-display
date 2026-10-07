@@ -27,11 +27,15 @@ def main_loop():
 
     departures = []
     dep_lock = threading.Lock()
+    departures_last_update = {"last_update": None}
     weather = {"data": None}  # dicts allow in-place mutation of values from threads and avoids local rebinding
     weather_lock = threading.Lock()
 
     threading.Thread(
-        target=trip_fetch_loop, name="TripFetchThread", args=[departures, dep_lock, update_event], daemon=True
+        target=trip_fetch_loop,
+        name="TripFetchThread",
+        args=[departures, dep_lock, update_event, departures_last_update],
+        daemon=True,
     ).start()
     threading.Thread(target=clock_loop, name="ClockThread", args=[update_event], daemon=True).start()
     threading.Thread(
@@ -47,10 +51,11 @@ def main_loop():
         # only need a shallow copy bc underlying data is immutable (frozen dataclass)
         with dep_lock:
             departures_copy = departures.copy()
+            departures_last_update_copy = departures_last_update["last_update"]
         with weather_lock:
             weather_copy = weather["data"]
 
-        screen_img = gui.draw_gui(departures_copy, weather_copy)
+        screen_img = gui.draw_gui(departures_copy, weather_copy, departures_last_update_copy)
         gui.write_rgb_to_frame_buffer(screen_img)
 
 
