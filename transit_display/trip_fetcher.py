@@ -3,7 +3,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
@@ -178,6 +178,8 @@ def fetch_departures_for_all_stations_concurrently() -> list[Departure]:
                 logger.exception(f"Unexpected fatal error during concurrent fetch of {station_name}")
                 raise
 
+    # Drop past departures. Normalize datetime objects to UTC for comparison.
+    departures = [d for d in departures if d.when.astimezone(timezone.utc) >= datetime.now(timezone.utc)]
     departures = sorted(departures, key=lambda dep: dep.when)
     return departures
 
