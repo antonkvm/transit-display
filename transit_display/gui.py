@@ -112,28 +112,31 @@ def draw_delay(
 
 
 def draw_trip_list(draw: ImageDraw.ImageDraw, departures: list[Departure], departures_last_update: datetime | None):
-    for row in range(TOP_OFFSET_ROWS, NUM_ROWS):
+
+    # display timestamp of last transit list update:
+    if departures_last_update is None:
+        text = "Last transit update: Never"
+    else:
+        now = datetime.strftime(departures_last_update, "%d.%m.%y %H:%M")
+        text = f"Last transit update: {now}"
+    text_anchor = "lm"
+    padding_left = 10
+    y = (NUM_ROWS - 1) * ROW_HEIGHT  # y value of the last row
+    text_xy = (padding_left, get_vertical_center(y, ROW_HEIGHT))
+    draw.text(text_xy, text, "lightgrey", font(30), text_anchor)
+
+    for row in range(TOP_OFFSET_ROWS, NUM_ROWS - 1):
         y = row * ROW_HEIGHT
 
         # zebra print background for lines:
         if row % 2 == 0:
             draw.rectangle(((0, y), (720, y + ROW_HEIGHT)), (25, 25, 25))
 
-        # display timestamp of last transit list update:
-        if row == NUM_ROWS - 1 and departures_last_update is not None:
-            now = datetime.strftime(departures_last_update, "%d.%m.%y %H:%M")
-            text = f"Last transit update: {now}"
-            text_anchor = "lm"
-            padding_left = 10
-            text_xy = (padding_left, get_vertical_center(y, ROW_HEIGHT))
-            draw.text(text_xy, text, "lightgrey", font(30), text_anchor)
-            break
-
         try:
             departure = departures[row - TOP_OFFSET_ROWS]
         except IndexError:
             # more rows than available departures, leave remaining rows empty
-            break
+            continue
 
         for col, col_width in enumerate(COL_WIDTHS):
             x = sum(COL_WIDTHS[:col])
