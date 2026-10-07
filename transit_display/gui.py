@@ -265,19 +265,20 @@ def write_rgb_to_frame_buffer(rgb_image: Image.Image):
 def show_gui_snapshot_window():
     # departures = fetch_departures_for_all_stations_concurrently()
     logger.info("Assuming this is a test environemnt, using dummy departure list and creating a single snapshot.")
+    now = datetime.now()
     departures = [
-        Departure("1", "S41", "↻ S Beusselstr.", datetime.now() + timedelta(minutes=0), 60, 1, "+1", "suburban"),
-        Departure("2", "S42", "↺ S Beusselstr.", datetime.now() + timedelta(minutes=1), 0, 0, "0", "suburban"),
-        Departure("3", "M45", "Hertzallee", datetime.now() + timedelta(minutes=2), 0, 0, "0", "bus"),
-        Departure("4", "M45", "Johannesstift", datetime.now() + timedelta(minutes=3), 0, 0, "0", "bus"),
-        Departure("5", "S41", "↻ S Greifswalder Str.", datetime.now() + timedelta(minutes=4), 0, 0, "0", "suburban"),
-        Departure("6", "S42", "↺ S Südkreuz Bhf", datetime.now() + timedelta(minutes=5), 0, 0, "0", "suburban"),
-        Departure("7", "309", "U Wilmersdorfer Str.", datetime.now() + timedelta(minutes=6), -60, -1, "-1", "bus"),
-        Departure("8", "S41", "↻ S Beusselstr.", datetime.now() + timedelta(minutes=7), 0, 0, "0", "suburban"),
-        Departure("9", "M45", "Johannesstift", datetime.now() + timedelta(minutes=8), 0, 0, "0", "bus"),
-        Departure("10", "139", "Eschenweg", datetime.now() + timedelta(minutes=9), 0, 0, "0", "bus"),
-        Departure("11", "S42", "Meppen11", datetime.now() + timedelta(minutes=10), 0, 0, "0", "suburban"),
-        Departure("12", "139", "Schlosspark-Klinik", datetime.now() + timedelta(minutes=11), 0, 0, "0", "bus"),
+        Departure("1", "S41", "↻ S Beusselstr.", now + timedelta(minutes=0), 60, 1, "+1", "suburban"),
+        Departure("2", "S42", "↺ S Beusselstr.", now + timedelta(minutes=1), 0, 0, "0", "suburban"),
+        Departure("3", "M45", "Hertzallee", now + timedelta(minutes=2), 0, 0, "0", "bus"),
+        Departure("4", "M45", "Johannesstift", now + timedelta(minutes=3), 0, 0, "0", "bus"),
+        Departure("5", "S41", "↻ S Greifswalder Str.", now + timedelta(minutes=4), 0, 0, "0", "suburban"),
+        Departure("6", "S42", "↺ S Südkreuz Bhf", now + timedelta(minutes=5), 0, 0, "0", "suburban"),
+        Departure("7", "309", "U Wilmersdorfer Str.", now + timedelta(minutes=6), -60, -1, "-1", "bus"),
+        Departure("8", "S41", "↻ S Beusselstr.", now + timedelta(minutes=7), 0, 0, "0", "suburban"),
+        Departure("9", "M45", "Johannesstift", now + timedelta(minutes=8), 0, 0, "0", "bus"),
+        Departure("10", "139", "Eschenweg", now + timedelta(minutes=9), 0, 0, "0", "bus"),
+        Departure("11", "S42", "Meppen11", now + timedelta(minutes=10), 0, 0, "0", "suburban"),
+        Departure("12", "139", "Schlosspark-Klinik", now + timedelta(minutes=11), 0, 0, "0", "bus"),
     ]
     weather = get_weather()
     img = draw_gui(departures, weather, datetime.now())
