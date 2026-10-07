@@ -3,7 +3,7 @@ import logging
 import threading
 import time
 
-import transit_display.gui as gui
+from transit_display import gui
 from transit_display.trip_fetcher import trip_fetch_loop
 from transit_display.weather_fetcher import weather_fetch_loop
 

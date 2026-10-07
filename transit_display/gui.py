@@ -241,7 +241,7 @@ def draw_gui(departures: list[Departure], weather: WeatherData | None, departure
 
 
 def draw_grid_outline_for_testing(draw):
-    for row in range(0, NUM_ROWS):
+    for row in range(NUM_ROWS):
         y = row * ROW_HEIGHT
         for col, col_width in enumerate(COL_WIDTHS):
             x = sum(COL_WIDTHS[:col])
